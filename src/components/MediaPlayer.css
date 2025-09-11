@@ -259,16 +259,26 @@
   gap: 10px;
 }
 
+.volume-container:hover .volume-slider {
+  display: block;
+}
+
 .volume-slider {
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  right: -100px; /* Position to the right */
+  top: 50%;
+  transform: translateY(-50%);
   background: rgba(0, 0, 0, 0.9);
   padding: 8px 12px;
   border-radius: 4px;
-  margin-bottom: 10px;
   min-width: 80px;
+  white-space: nowrap;
+  z-index: 1000;
+  display: none; /* Hidden by default */
+}
+
+.volume-slider:hover {
+  display: block; /* Stay visible when hovering over slider */
 }
 
 .volume-input {

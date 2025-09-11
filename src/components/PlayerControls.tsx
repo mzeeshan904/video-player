@@ -27,7 +27,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   isAd,
 }) => {
   const [showControls, setShowControls] = useState(true);
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
   const progressRef = useRef<HTMLDivElement>(null);
@@ -164,11 +163,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
             )}
           </button>
 
-          <div 
-            className="volume-container"
-            onMouseEnter={() => setShowVolumeSlider(true)}
-            onMouseLeave={() => setShowVolumeSlider(false)}
-          >
+          <div className="volume-container">
             <button 
               className="control-button volume"
               onClick={onMute}
@@ -189,19 +184,17 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               )}
             </button>
 
-            {showVolumeSlider && (
-              <div className="volume-slider">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={state.muted ? 0 : state.volume}
-                  onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-                  className="volume-input"
-                />
-              </div>
-            )}
+            <div className="volume-slider">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={state.muted ? 0 : state.volume}
+                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                className="volume-input"
+              />
+            </div>
           </div>
 
           <div className="time-display">
