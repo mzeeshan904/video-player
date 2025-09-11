@@ -33,15 +33,15 @@
     "responsive",
     "mobile-friendly"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Muhammad Zeeshan <mzee904904@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player#readme",
+  "homepage": "https://github.com/mzeeshan904/video-player#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player.git"
+    "url": "git+https://github.com/mzeeshan904/video-player.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/issues"
+    "url": "https://github.com/mzeeshan904/video-player/issues"
   },
   "dependencies": {
     "dashjs": "^4.7.0",
@@ -58,7 +58,6 @@
     "@types/jest": "^29.0.0",
     "react-scripts": "^5.0.1",
     "rollup": "^2.79.2",
-    "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-typescript2": "^0.36.0"

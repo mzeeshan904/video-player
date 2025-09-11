@@ -294,9 +294,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 **Support**
 
-- 📖 [Documentation](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player#readme)
-- 🐛 [Issue Tracker](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/issues)
-- 💬 [Discussions](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/discussions)
+- 📖 [Documentation](https://github.com/mzeeshan904/video-player#readme)
+- 🐛 [Issue Tracker](https://github.com/mzeeshan904/video-player/issues)
+- 💬 [Discussions](https://github.com/mzeeshan904/video-player/discussions)
 
 ## 🎯 **Roadmap**
 
