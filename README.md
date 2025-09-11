@@ -1,442 +1,311 @@
-# Custom Media Player
+# 🎬 Advanced React Media Player
 
-A comprehensive, production-ready video/audio player built with React and TypeScript. Features YouTube-like functionality with advanced ad support, DRM integration, interactive ads, and comprehensive analytics.
+> **Professional-grade React media player with ads, DRM, analytics, and interactive features**
 
-## 🌟 Features
+[![npm version](https://badge.fury.io/js/advanced-react-media-player.svg)](https://badge.fury.io/js/advanced-react-media-player)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-### Core Player
-- ✅ **Video & Audio Playback** - Supports all modern media formats
-- ✅ **Complete Controls** - Play, pause, volume, mute, fullscreen, progress bar with seek
+A feature-rich, production-ready React media player component that supports video/audio playback with comprehensive advertising, DRM protection, adaptive streaming, and advanced analytics.
+
+## ✨ Features
+
+### 🎥 **Core Player**
+- ✅ **Video & Audio Support** - MP4, WebM, HLS, DASH
 - ✅ **Responsive Design** - Mobile-friendly with touch controls
-- ✅ **Keyboard Shortcuts** - Space for play/pause, arrow keys for seek
-- ✅ **Auto-hide Controls** - Clean viewing experience
+- ✅ **Standard Controls** - Play, Pause, Volume, Mute, Fullscreen, Seek
+- ✅ **Picture-in-Picture** - Modern PiP API support
+- ✅ **Keyboard Shortcuts** - Space, Arrow keys, Volume controls
 
-### Ad System
-- ✅ **Pre-roll, Mid-roll, Post-roll Ads** - Complete ad insertion support
-- ✅ **Skippable Ads** - Configurable skip countdown (e.g., "Skip in 5s")
-- ✅ **Ad Countdown** - "Ad ends in Xs" indicators
-- ✅ **Multiple Formats** - MP4, VAST, VPAID support
-- ✅ **Click Tracking** - Monitor ad interactions
-- ✅ **Lazy Loading** - Ads load only when needed
+### 📺 **Advertising System**
+- ✅ **Pre-roll, Mid-roll, Post-roll Ads** - Complete ad sequence support
+- ✅ **Skippable Ads** - Configurable skip timing with countdown
+- ✅ **Multiple Ad Formats** - MP4, VAST, VPAID support
+- ✅ **Interactive Ads** - Polls, quizzes, CTAs, overlay cards
+- ✅ **Ad Analytics** - Impressions, clicks, skips, completions
+- ✅ **Lazy Loading** - Efficient ad resource management
 
-### Interactive Ads
-- ✅ **Polls & Quizzes** - Engage viewers during ads
-- ✅ **Call-to-Action Buttons** - Drive traffic to landing pages
-- ✅ **Overlay Cards** - Product showcases and information cards
-- ✅ **Interaction Analytics** - Track user engagement
-- ✅ **Local Storage** - Remember user preferences to avoid repetition
-
-### DRM Support
-- ✅ **Widevine, PlayReady, FairPlay** - Industry-standard DRM systems
+### 🔐 **DRM Protection**
+- ✅ **Widevine** - Google's DRM solution
+- ✅ **PlayReady** - Microsoft's DRM system
+- ✅ **FairPlay** - Apple's DRM technology
 - ✅ **EME/MSE Integration** - Modern browser DRM APIs
-- ✅ **License Server Support** - Custom headers and authentication
 - ✅ **Fallback Support** - Graceful degradation for non-DRM browsers
 
-### Analytics & Tracking
-- ✅ **Comprehensive Events** - Play, pause, seek, volume, fullscreen, errors
-- ✅ **Ad Analytics** - Impressions, clicks, skips, completions
-- ✅ **Interactive Ad Tracking** - Quiz answers, poll results, CTA clicks
-- ✅ **Custom Handlers** - Integrate with Google Analytics, Mixpanel, etc.
-- ✅ **Real-time Logging** - Console debugging and external endpoints
+### 📊 **Analytics & Tracking**
+- ✅ **Player Events** - Play, pause, seek, buffering, errors
+- ✅ **Ad Events** - Complete ad lifecycle tracking
+- ✅ **Interactive Events** - User engagement with ads
+- ✅ **Custom Events** - Extensible analytics system
+- ✅ **External Integration** - Easy integration with analytics platforms
 
-### Advanced Features
-- ✅ **Picture-in-Picture** - Modern PiP API support
-- ✅ **HLS/DASH Streaming** - Adaptive bitrate streaming
-- ✅ **Quality Selection** - Manual and automatic quality switching
-- ✅ **Themes** - Dark and light mode support
-- ✅ **Accessibility** - ARIA labels and keyboard navigation
+### 🚀 **Advanced Features**
+- ✅ **Adaptive Bitrate Streaming** - HLS.js & Dash.js integration
+- ✅ **TypeScript Support** - Full type safety
+- ✅ **Configurable UI** - Customizable player appearance
+- ✅ **Local Storage** - User preferences persistence
+- ✅ **Error Handling** - Robust error recovery
+
+## 📦 Installation
+
+```bash
+npm install advanced-react-media-player
+```
 
 ## 🚀 Quick Start
 
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd custom-player
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-### Basic Usage
-
 ```tsx
-import MediaPlayer from './components/MediaPlayer';
-import { PlayerConfig } from './types';
-
-const config: PlayerConfig = {
-  src: {
-    url: 'https://example.com/video.mp4',
-    type: 'video',
-    mimeType: 'video/mp4'
-  },
-  analytics: {
-    enabled: true,
-    onEvent: (event) => console.log('Analytics:', event)
-  },
-  ui: {
-    theme: 'dark',
-    autoplay: false,
-    showControls: true
-  }
-};
+import React from 'react';
+import { MediaPlayer } from 'advanced-react-media-player';
+import 'advanced-react-media-player/dist/index.css';
 
 function App() {
-  return <MediaPlayer config={config} />;
+  const config = {
+    src: {
+      url: 'https://your-video-url.mp4',
+      mimeType: 'video/mp4'
+    },
+    ui: {
+      showControls: true,
+      autoplay: true,
+      responsive: true
+    },
+    ads: {
+      enabled: true,
+      preRoll: [
+        {
+          id: 'preroll-1',
+          url: 'https://your-ad-url.mp4',
+          duration: 15,
+          skippable: true,
+          skipAfter: 5
+        }
+      ],
+      midRoll: [
+        {
+          id: 'midroll-1',
+          url: 'https://your-ad-url.mp4',
+          duration: 15,
+          playAt: 30,
+          skippable: true,
+          skipAfter: 5
+        }
+      ]
+    },
+    analytics: {
+      enabled: true,
+      onEvent: (event) => console.log('📊 Analytics:', event)
+    }
+  };
+
+  return (
+    <div className="App">
+      <MediaPlayer config={config} />
+    </div>
+  );
 }
+
+export default App;
 ```
 
-## 📋 Configuration Examples
+## 📖 Documentation
 
-### With Ads and Interactive Features
+### 🔧 **Configuration Options**
 
-```tsx
-const configWithAds: PlayerConfig = {
-  src: {
-    url: 'https://example.com/main-video.mp4',
-    type: 'video'
-  },
-  ads: {
-    preRoll: [{
-      id: 'preroll-1',
-      url: 'https://example.com/ad-video.mp4',
-      duration: 30,
-      skippable: true,
-      skipAfter: 5,
-      interactive: {
-        type: 'quiz',
-        data: {
-          question: 'What do you think about this product?',
-          options: ['Love it!', 'It\'s okay', 'Not interested'],
-          correctAnswer: 0,
-          duration: 15
-        }
-      }
-    }],
-    midRoll: [{
-      id: 'midroll-1',
-      url: 'https://example.com/mid-ad.mp4',
-      duration: 15,
-      skippable: false,
-      playAt: 120, // 2 minutes into content
-      interactive: {
-        type: 'cta',
-        data: {
-          text: 'Discover our latest products!',
-          url: 'https://example.com/products',
-          buttonText: 'Shop Now',
-          duration: 10
-        }
-      }
-    }]
-  },
-  analytics: {
-    enabled: true,
-    onEvent: (event) => {
-      // Send to your analytics service
-      console.log('Event:', event);
-    }
-  }
-};
-```
+<details>
+<summary><strong>Player Configuration</strong></summary>
 
-### DRM Protected Content
-
-```tsx
-const drmConfig: PlayerConfig = {
-  src: {
-    url: 'https://example.com/encrypted-video.mp4',
-    type: 'video',
-    drm: {
-      type: 'widevine',
-      licenseUrl: 'https://license-server.com/widevine/license',
-      headers: {
-        'X-API-Key': 'your-api-key',
-        'Authorization': 'Bearer your-token'
-      }
-    }
-  }
-};
-```
-
-### HLS/DASH Streaming
-
-```tsx
-const hlsConfig: PlayerConfig = {
-  src: {
-    url: 'https://example.com/stream.m3u8',
-    type: 'video',
-    mimeType: 'application/x-mpegURL'
-  }
-};
-
-const dashConfig: PlayerConfig = {
-  src: {
-    url: 'https://example.com/manifest.mpd',
-    type: 'video',
-    mimeType: 'application/dash+xml'
-  }
-};
-```
-
-## 🔧 API Reference
-
-### PlayerConfig Interface
-
-```tsx
+```typescript
 interface PlayerConfig {
-  src: MediaSource;
+  src: {
+    url: string;
+    mimeType?: string;
+    drm?: DRMConfig;
+  };
+  ui?: {
+    showControls?: boolean;
+    autoplay?: boolean;
+    responsive?: boolean;
+    poster?: string;
+  };
   ads?: AdConfig;
-  analytics?: AnalyticsConfig;
-  ui?: UIConfig;
+  analytics?: {
+    enabled: boolean;
+    onEvent: (event: AnalyticsEvent) => void;
+  };
 }
 ```
+</details>
 
-### MediaSource Interface
+<details>
+<summary><strong>Ad Configuration</strong></summary>
 
-```tsx
-interface MediaSource {
-  url: string;
-  type: 'video' | 'audio';
-  mimeType?: string;
-  drm?: DRMConfig;
-}
-```
-
-### AdConfig Interface
-
-```tsx
+```typescript
 interface AdConfig {
+  enabled: boolean;
   preRoll?: Ad[];
   midRoll?: MidRollAd[];
   postRoll?: Ad[];
+  vast?: {
+    enabled: boolean;
+    tagUrl?: string;
+  };
 }
 
 interface Ad {
   id: string;
   url: string;
   duration: number;
-  skippable: boolean;
+  skippable?: boolean;
   skipAfter?: number;
-  interactive?: InteractiveAdConfig;
+  interactive?: PollData | QuizData | CTAData | OverlayData;
 }
 ```
+</details>
 
-### Interactive Ad Types
+<details>
+<summary><strong>DRM Configuration</strong></summary>
 
-```tsx
-interface InteractiveAdConfig {
-  type: 'poll' | 'quiz' | 'cta' | 'overlay';
-  data: PollData | QuizData | CTAData | OverlayData;
-}
-
-// Poll Example
-interface PollData {
-  question: string;
-  options: string[];
-  duration: number;
-}
-
-// Quiz Example
-interface QuizData {
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  duration: number;
-}
-
-// Call-to-Action Example
-interface CTAData {
-  text: string;
-  url: string;
-  buttonText: string;
-  duration: number;
+```typescript
+interface DRMConfig {
+  widevine?: {
+    licenseServerUrl: string;
+    certificateUrl?: string;
+  };
+  playready?: {
+    licenseServerUrl: string;
+  };
+  fairplay?: {
+    licenseServerUrl: string;
+    certificateUrl: string;
+  };
 }
 ```
+</details>
 
-## 📊 Analytics Events
+### 🎯 **Interactive Ads**
 
-The player tracks the following events:
+Create engaging ad experiences with polls, quizzes, and CTAs:
 
-| Event Type | Description | Payload |
-|------------|-------------|---------|
-| `play` | Video starts playing | `{ currentTime }` |
-| `pause` | Video is paused | `{ currentTime }` |
-| `seek` | User seeks to different time | `{ currentTime }` |
-| `volumechange` | Volume or mute state changes | `{ volume, muted }` |
-| `fullscreen` | Fullscreen mode toggled | `{ fullscreen }` |
-| `error` | Playback error occurs | `{ error }` |
-| `ad_start` | Ad begins playing | `{ adId, adType }` |
-| `ad_complete` | Ad finishes playing | `{ adId }` |
-| `ad_skip` | User skips an ad | `{ adId }` |
-| `ad_click` | User clicks on ad | `{ adId, url? }` |
-| `ad_interaction` | Interactive ad engagement | `{ adId, interactionType, data }` |
-| `buffering_start` | Video starts buffering | `{}` |
-| `buffering_end` | Video stops buffering | `{}` |
-
-## 🎨 Theming
-
-The player supports dark and light themes:
-
-```tsx
-const config: PlayerConfig = {
-  // ... other config
-  ui: {
-    theme: 'dark', // or 'light'
-    // ... other UI options
+```typescript
+const interactiveAd = {
+  id: 'poll-ad',
+  url: 'https://ad-video.mp4',
+  duration: 30,
+  interactive: {
+    type: 'poll',
+    question: 'What\'s your favorite feature?',
+    options: ['Video Quality', 'Ad Experience', 'Analytics'],
+    position: 'bottom-left'
   }
 };
 ```
 
-## 📱 Mobile Support
+### 📊 **Analytics Events**
 
-The player is fully responsive and includes:
-- Touch-friendly controls
-- Optimized button sizes for mobile
-- Responsive layout that adapts to screen size
-- Touch gestures for seek and volume
+Track comprehensive player and ad analytics:
 
-## 🔧 Browser Support
-
-- **Chrome 60+** - Full support including DRM
-- **Firefox 55+** - Full support including DRM
-- **Safari 11+** - Full support including FairPlay DRM
-- **Edge 79+** - Full support including DRM
-- **Mobile browsers** - iOS Safari 11+, Chrome Mobile 60+
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-src/
-├── components/
-│   ├── MediaPlayer.tsx      # Main player component
-│   ├── PlayerControls.tsx   # Control bar
-│   ├── AdOverlay.tsx        # Ad display overlay
-│   └── InteractiveAdOverlay.tsx # Interactive ad features
-├── hooks/
-│   ├── usePlayerState.ts    # Player state management
-│   └── usePictureInPicture.ts # PiP functionality
-├── utils/
-│   ├── drmManager.ts        # DRM handling
-│   ├── adManager.ts         # Ad scheduling and tracking
-│   └── streamingManager.ts  # HLS/DASH support
-├── types/
-│   └── index.ts             # TypeScript interfaces
-└── App.tsx                  # Example application
+```typescript
+const handleAnalytics = (event: AnalyticsEvent) => {
+  switch (event.type) {
+    case 'play':
+      console.log('Video started:', event.payload);
+      break;
+    case 'ad_impression':
+      console.log('Ad viewed:', event.payload);
+      break;
+    case 'interactive_engagement':
+      console.log('User engaged:', event.payload);
+      break;
+  }
+};
 ```
 
-### Available Scripts
+## 🎬 **Example Configurations**
 
-```bash
-npm start          # Start development server
-npm build          # Build for production
-npm test           # Run tests
-npm run eject      # Eject from Create React App
+### Basic Video Player
+```typescript
+const basicConfig = {
+  src: { url: 'https://video.mp4' },
+  ui: { showControls: true }
+};
 ```
 
-## 🔒 DRM Configuration
+### Complete Ad Experience
+```typescript
+const adConfig = {
+  src: { url: 'https://main-video.mp4' },
+  ads: {
+    enabled: true,
+    preRoll: [{ id: 'pre1', url: 'https://ad1.mp4', duration: 15, skippable: true, skipAfter: 5 }],
+    midRoll: [{ id: 'mid1', url: 'https://ad2.mp4', duration: 15, playAt: 60, skippable: true }],
+    postRoll: [{ id: 'post1', url: 'https://ad3.mp4', duration: 10 }]
+  }
+};
+```
 
-### Widevine (Google)
-
-```tsx
+### DRM-Protected Content
+```typescript
 const drmConfig = {
-  type: 'widevine',
-  licenseUrl: 'https://your-server.com/widevine/license',
-  headers: {
-    'X-API-Key': 'your-api-key'
-  }
-};
-```
-
-### PlayReady (Microsoft)
-
-```tsx
-const drmConfig = {
-  type: 'playready',
-  licenseUrl: 'https://your-server.com/playready/license',
-  headers: {
-    'Authorization': 'Bearer your-token'
-  }
-};
-```
-
-### FairPlay (Apple)
-
-```tsx
-const drmConfig = {
-  type: 'fairplay',
-  licenseUrl: 'https://your-server.com/fairplay/license',
-  certificateUrl: 'https://your-server.com/fairplay/cert',
-  headers: {
-    'X-API-Key': 'your-api-key'
-  }
-};
-```
-
-## 📈 Analytics Integration
-
-### Google Analytics
-
-```tsx
-const analyticsConfig = {
-  enabled: true,
-  onEvent: (event) => {
-    if (window.gtag) {
-      window.gtag('event', event.type, {
-        custom_parameter: event.payload,
-        timestamp: event.timestamp
-      });
+  src: {
+    url: 'https://encrypted-video.mpd',
+    mimeType: 'application/dash+xml',
+    drm: {
+      widevine: {
+        licenseServerUrl: 'https://license-server.com/widevine'
+      }
     }
   }
 };
 ```
 
-### Custom Analytics
+## 🔧 **API Reference**
 
-```tsx
-const analyticsConfig = {
-  enabled: true,
-  endpoint: 'https://your-analytics-server.com/events',
-  onEvent: async (event) => {
-    await fetch('https://your-analytics-server.com/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event)
-    });
-  }
-};
-```
+### Components
+- `<MediaPlayer config={PlayerConfig} />` - Main player component
 
-## 🤝 Contributing
+### Hooks
+- `usePlayerState(onEvent?)` - Player state management
+- `usePictureInPicture(videoRef)` - PiP functionality
+
+### Types
+- `PlayerConfig` - Main configuration interface
+- `AnalyticsEvent` - Analytics event structure
+- `Ad`, `MidRollAd` - Ad configuration types
+- `DRMConfig` - DRM settings interface
+
+## 🌟 **Live Examples**
+
+Check out our comprehensive examples:
+- [Basic Usage](./USAGE_EXAMPLE.md)
+- [Complete Ad Setup](./COMPLETE_ADS_EXAMPLE.md)
+
+## 🤝 **Contributing**
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 📝 **License**
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🆘 **Support**
 
-For support and questions:
-- Create an issue on GitHub
-- Check the documentation
-- Review the example configurations in `src/App.tsx`
+- 📖 [Documentation](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player#readme)
+- 🐛 [Issue Tracker](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/issues)
+- 💬 [Discussions](https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/discussions)
 
-## 🎯 Roadmap
+## 🎯 **Roadmap**
 
-- [ ] 360° video support
-- [ ] VR/AR integration
-- [ ] Advanced analytics dashboard
+- [ ] WebRTC streaming support
 - [ ] Server-side ad insertion (SSAI)
-- [ ] Content recommendation engine
-- [ ] Multi-language subtitle support
+- [ ] Advanced analytics dashboard
+- [ ] React Native version
+- [ ] Vue.js version
+
+---
+
+**Made with ❤️ for the React community**

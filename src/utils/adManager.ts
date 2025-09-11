@@ -10,19 +10,10 @@ export class AdManager {
   private onAnalyticsEvent?: (type: AnalyticsEvent['type'], payload?: any) => void;
 
   constructor(config?: AdConfig, onAnalyticsEvent?: (type: AnalyticsEvent['type'], payload?: any) => void) {
-    console.log('🏗️ AdManager constructor called with config:', config);
     if (config) {
       this.preRollAds = config.preRoll || [];
       this.midRollAds = config.midRoll || [];
       this.postRollAds = config.postRoll || [];
-      console.log('📋 AdManager loaded:', {
-        preRollCount: this.preRollAds.length,
-        midRollCount: this.midRollAds.length,
-        postRollCount: this.postRollAds.length,
-        preRollIds: this.preRollAds.map(ad => ad.id)
-      });
-    } else {
-      console.log('❌ No ad config provided to AdManager');
     }
     this.onAnalyticsEvent = onAnalyticsEvent;
     // Always reset indices when creating new instance
@@ -30,17 +21,12 @@ export class AdManager {
   }
 
   public getPreRollAd(): Ad | null {
-    console.log('📊 getPreRollAd called - index:', this.currentPreRollIndex, 'total ads:', this.preRollAds.length);
-    console.trace('📍 Call stack for getPreRollAd:');
     if (this.currentPreRollIndex < this.preRollAds.length) {
       const ad = this.preRollAds[this.currentPreRollIndex];
-      console.log('✅ Returning pre-roll ad:', ad.id, 'at index:', this.currentPreRollIndex);
       this.currentPreRollIndex++;
-      console.log('📈 Index incremented to:', this.currentPreRollIndex);
       this.trackEvent('ad_start', { adId: ad.id, adType: 'preroll', adIndex: this.currentPreRollIndex });
       return ad;
     }
-    console.log('❌ No pre-roll ads available');
     return null;
   }
 
@@ -155,8 +141,6 @@ export class AdManager {
   }
 
   public reset(): void {
-    console.log('🔄 AdManager.reset() called - resetting indices from', this.currentPreRollIndex, 'to 0');
-    console.trace('📍 Call stack for reset:');
     this.currentPreRollIndex = 0;
     this.currentPostRollIndex = 0;
     this.playedMidRollAds.clear();

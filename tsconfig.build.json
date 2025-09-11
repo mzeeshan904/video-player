@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/types",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "rootDir": "src"
+  },
+  "include": [
+    "src/index.ts",
+    "src/types/**/*",
+    "src/components/**/*",
+    "src/hooks/**/*",
+    "src/utils/**/*",
+    "src/config/**/*"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/App.tsx",
+    "src/index.tsx",
+    "demo",
+    "dist"
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 export const usePictureInPicture = (videoRef: React.RefObject<HTMLVideoElement>) => {
   const [isPiPSupported, setIsPiPSupported] = useState(false);

@@ -353,8 +353,8 @@
 
 .skip-container {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  bottom: 80px;
+  right: 25px;
   pointer-events: auto;
   z-index: 50; /* Ensure skip button is above everything */
 }

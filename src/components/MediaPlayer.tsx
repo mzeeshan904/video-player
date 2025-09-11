@@ -22,20 +22,17 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const adManagerRef = useRef<AdManager>();
   const streamingManagerRef = useRef<StreamingManager>();
   const isInitializedRef = useRef<boolean>(false);
+  const resumeTimeRef = useRef<number>(0);
   const { state, updateState, trackEvent } = usePlayerState(config.analytics?.onEvent);
   const { isPiPSupported, isPiPActive, togglePiP } = usePictureInPicture(videoRef);
 
   // Initialize managers only once using useMemo
   useMemo(() => {
     if (!drmManagerRef.current) {
-      console.log('🏗️ Creating DRMManager (useMemo)...');
       drmManagerRef.current = new DRMManager();
     }
     if (!adManagerRef.current) {
-      console.log('🏗️ Creating AdManager (useMemo)...');
-      console.log('🏗️ Config ads:', config.ads);
       adManagerRef.current = new AdManager(config.ads, trackEvent);
-      console.log('🏗️ AdManager created:', !!adManagerRef.current);
     }
     return true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,14 +41,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   // Initialize streaming manager when video element is ready
   useEffect(() => {
     if (videoRef.current && !streamingManagerRef.current) {
-      console.log('🏗️ Creating StreamingManager...');
       streamingManagerRef.current = new StreamingManager(videoRef.current);
     }
   }, []);
 
   // Setup video element and load source
   useEffect(() => {
-    console.log('🎬 Video setup useEffect called');
     const video = videoRef.current;
     if (!video) return;
 
@@ -78,28 +73,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         }
 
         // Check for pre-roll ads (only on first initialization)
-        console.log('🔍 Checking for pre-roll ads...');
-        console.log('🔍 Is already initialized:', isInitializedRef.current);
-        console.log('🔍 AdManager ref exists:', !!adManagerRef.current);
-        
         if (!isInitializedRef.current) {
-          console.log('🎬 First initialization - loading pre-roll ads');
           isInitializedRef.current = true;
-          
-          if (adManagerRef.current) {
-            console.log('🔍 AdManager instance found, getting pre-roll ad...');
-          } else {
-            console.log('❌ AdManager ref is null/undefined!');
-          }
           const preRollAd = adManagerRef.current?.getPreRollAd();
           if (preRollAd) {
-            console.log('🎬 Starting first pre-roll ad:', preRollAd.id);
-            updateState({ currentAd: preRollAd });
+            updateState({ currentAd: preRollAd, adProgress: 0 });
             video.src = preRollAd.url;
             video.load();
-            video.play().catch(error => console.warn('Auto-play blocked or failed:', error));
+            video.play().catch(() => {}); // Auto-play may be blocked
           } else {
-            console.log('❌ No pre-roll ads found, starting main content');
             // No pre-roll ads, start main content
             updateState({ playbackPhase: 'content' });
             if (streamingManagerRef.current) {
@@ -109,12 +91,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             }
             video.load();
           }
-        } else {
-          console.log('🔄 Subsequent useEffect call - skipping pre-roll loading');
         }
 
       } catch (error) {
-        console.error('Failed to setup video:', error);
         updateState({ error: (error as Error).message });
         trackEvent('error', { error: (error as Error).message });
       }
@@ -152,24 +131,22 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           
           if (isSeek) {
             // Check for missed mid-roll ads during seek
-            console.log('🎯 Seek detected from', previousTime, 'to', currentTime, '- checking for missed ads');
+            // console.log('🎯 Seek detected from', previousTime, 'to', currentTime, '- checking for missed ads');
             midRollAd = adManagerRef.current.checkMissedMidRollAds(previousTime, currentTime);
-            if (midRollAd) {
-              console.log('🎬 Missed mid-roll ad found during seek:', midRollAd.id, 'at', midRollAd.playAt);
-            }
           } else {
             // Normal time progression - check for regular mid-roll ads
             midRollAd = adManagerRef.current.getMidRollAd(currentTime);
-            if (midRollAd) {
-              console.log('🎬 Mid-roll ad triggered at', currentTime, 'seconds:', midRollAd.id);
-            }
           }
           
           if (midRollAd) {
             // Store current main content time before switching to ad
+            console.log('🎬 STORING mainContentTime before mid-roll:', currentTime);
+            // Store resume time in a ref to avoid state race conditions
+            resumeTimeRef.current = currentTime;
             updateState({ 
               currentAd: midRollAd,
-              mainContentTime: currentTime
+              mainContentTime: currentTime,
+              adProgress: 0
             });
             video.pause();
             video.src = midRollAd.url;
@@ -184,7 +161,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
                   };
                   video.addEventListener('loadeddata', onLoadedData);
                 });
-                await video.play().catch((error: any) => console.warn('Play interrupted:', error));
+                await video.play().catch((error: any) => {});
               };
               playAfterLoad();
             }
@@ -194,8 +171,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
       // Handle ad progress and skip button (for any ad)
       if (state.currentAd) {
-        const adProgress = (currentTime / video.duration) * 100;
+        const adProgress = Math.min((currentTime / state.currentAd.duration) * 100, 100);
         updateState({ adProgress });
+
+        // Check if ad should end based on current time vs ad duration
+        if (currentTime >= state.currentAd.duration && state.isPlaying) {
+          // Ad has reached its end time, trigger ended event manually
+          video.pause();
+          handleEnded();
+        }
 
         if (state.currentAd.skippable && state.currentAd.skipAfter) {
           const showSkip = currentTime >= state.currentAd.skipAfter;
@@ -245,15 +229,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     const handleEnded = async () => {
       if (state.currentAd) {
         // Ad ended
-        console.log('🎬 AD_COMPLETE EVENT FIRED! Ad:', state.currentAd.id, 'Phase:', state.playbackPhase);
         adManagerRef.current?.onAdComplete(state.currentAd.id);
         
         if (state.playbackPhase === 'preroll') {
           // Check for more pre-roll ads
           const nextPreRollAd = adManagerRef.current?.getPreRollAd();
           if (nextPreRollAd) {
-            console.log('🎬 Playing next pre-roll ad:', nextPreRollAd.id);
-            updateState({ currentAd: nextPreRollAd, showSkipButton: false });
+            updateState({ currentAd: nextPreRollAd, showSkipButton: false, adProgress: 0 });
             video.src = nextPreRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -264,10 +246,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               };
               video.addEventListener('loadeddata', onLoadedData);
             });
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           } else {
             // All pre-roll ads done, start main content
-            console.log('🎬 Pre-roll ads complete, starting main content');
             updateState({ 
               currentAd: null, 
               showSkipButton: false, 
@@ -288,11 +269,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               video.addEventListener('loadeddata', onLoadedData);
             });
             video.currentTime = state.mainContentTime; // Resume from where we were
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           }
         } else if (state.playbackPhase === 'content') {
           // Mid-roll ad completed, return to main content
-          console.log('🎬 Mid-roll ad complete, returning to main content at', state.mainContentTime);
+          const resumeTime = resumeTimeRef.current;
+          console.log('✅ COMPLETING mid-roll, resumeTime from ref:', resumeTime);
           updateState({ currentAd: null, showSkipButton: false });
           if (streamingManagerRef.current) {
             streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
@@ -308,14 +290,17 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             };
             video.addEventListener('loadeddata', onLoadedData);
           });
-          video.currentTime = state.mainContentTime; // Resume from where we were
-          await video.play().catch(error => console.warn('Play interrupted:', error));
+          // Ensure we resume from the correct time
+          console.log('🎯 SETTING video.currentTime to:', resumeTime);
+          video.currentTime = resumeTime;
+          console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
+          trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_complete_resume' });
+          await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
           // Check for more post-roll ads
           const nextPostRollAd = adManagerRef.current?.getPostRollAd();
           if (nextPostRollAd) {
-            console.log('🎬 Playing next post-roll ad:', nextPostRollAd.id);
-            updateState({ currentAd: nextPostRollAd, showSkipButton: false });
+            updateState({ currentAd: nextPostRollAd, showSkipButton: false, adProgress: 0 });
             video.src = nextPostRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -326,24 +311,22 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               };
               video.addEventListener('loadeddata', onLoadedData);
             });
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           } else {
             // All post-roll ads done
-            console.log('🎬 All post-roll ads complete - showing replay');
             updateState({ isPlaying: false, currentAd: null, showReplay: true });
             trackEvent('complete', { reason: 'all_ads_finished' });
           }
         }
       } else {
         // Main content ended, start post-roll
-        console.log('🎬 Main content ended, checking for post-roll ads');
         const postRollAd = adManagerRef.current?.getPostRollAd();
         if (postRollAd) {
-          console.log('🎬 Starting post-roll ads:', postRollAd.id);
           updateState({ 
             currentAd: postRollAd, 
             showSkipButton: false, 
-            playbackPhase: 'postroll' 
+            playbackPhase: 'postroll',
+            adProgress: 0
           });
           video.src = postRollAd.url;
           video.load();
@@ -355,10 +338,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             };
             video.addEventListener('loadeddata', onLoadedData);
           });
-          await video.play().catch(error => console.warn('Play interrupted:', error));
+          await video.play().catch(error => {});
         } else {
           // No post-roll ads, video is complete - show replay
-          console.log('🎬 Main content complete, no post-roll ads - showing replay');
           updateState({ isPlaying: false, showReplay: true });
           trackEvent('complete', { reason: 'main_content_ended' });
         }
@@ -449,7 +431,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   }, [state.fullscreen]);
 
   const handleSkipAd = useCallback(async () => {
-    console.log('🚀 handleSkipAd called, currentAd:', state.currentAd?.id, 'phase:', state.playbackPhase);
     if (!state.currentAd) return;
 
     adManagerRef.current?.onAdSkip(state.currentAd.id);
@@ -466,8 +447,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           // Check for more pre-roll ads
           const nextPreRollAd = adManagerRef.current?.getPreRollAd();
           if (nextPreRollAd) {
-            console.log('🚀 Skipping to next pre-roll ad:', nextPreRollAd.id);
-            updateState({ currentAd: nextPreRollAd, showSkipButton: false });
+            updateState({ currentAd: nextPreRollAd, showSkipButton: false, adProgress: 0 });
             video.src = nextPreRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -478,10 +458,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               };
               video.addEventListener('loadeddata', onLoadedData);
             });
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           } else {
             // All pre-roll ads done, start main content
-            console.log('🚀 Skipping to main content');
             updateState({ 
               currentAd: null, 
               showSkipButton: false, 
@@ -502,11 +481,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               video.addEventListener('loadeddata', onLoadedData);
             });
             video.currentTime = state.mainContentTime;
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           }
         } else if (state.playbackPhase === 'content') {
           // Mid-roll ad skipped, return to main content
-          console.log('🚀 Skipping mid-roll, returning to main content at', state.mainContentTime);
+          const resumeTime = resumeTimeRef.current;
+          console.log('⏭️ SKIPPING mid-roll, resumeTime from ref:', resumeTime);
           updateState({ currentAd: null, showSkipButton: false });
           if (streamingManagerRef.current) {
             streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
@@ -522,14 +502,17 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             };
             video.addEventListener('loadeddata', onLoadedData);
           });
-          video.currentTime = state.mainContentTime;
-          await video.play().catch(error => console.warn('Play interrupted:', error));
+          // Ensure we resume from the correct time
+          console.log('🎯 SETTING video.currentTime to:', resumeTime);
+          video.currentTime = resumeTime;
+          console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
+          trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_skip_resume' });
+          await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
           // Check for more post-roll ads
           const nextPostRollAd = adManagerRef.current?.getPostRollAd();
           if (nextPostRollAd) {
-            console.log('🚀 Skipping to next post-roll ad:', nextPostRollAd.id);
-            updateState({ currentAd: nextPostRollAd, showSkipButton: false });
+            updateState({ currentAd: nextPostRollAd, showSkipButton: false, adProgress: 0 });
             video.src = nextPostRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -540,16 +523,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               };
               video.addEventListener('loadeddata', onLoadedData);
             });
-            await video.play().catch(error => console.warn('Play interrupted:', error));
+            await video.play().catch(error => {});
           } else {
             // All post-roll ads done
-            console.log('🚀 All ads complete - showing replay');
             updateState({ isPlaying: false, currentAd: null, showSkipButton: false, showReplay: true });
             trackEvent('complete', { reason: 'all_ads_skipped' });
           }
         }
       } catch (error) {
-        console.error('Error during ad skip:', error);
+        trackEvent('error', { error: (error as Error).message });
       }
     }
   }, [state.currentAd, state.playbackPhase, state.mainContentTime, config.src, updateState, trackEvent]);
@@ -571,11 +553,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   }, [state.currentAd]);
 
   const handleReplay = useCallback(() => {
-    console.log('🔄 Replay requested - restarting from beginning');
     
     // Reset all managers and state
     adManagerRef.current?.reset();
     isInitializedRef.current = false; // Reset initialization flag for replay
+    resumeTimeRef.current = 0; // Reset resume time
     updateState({
       showReplay: false,
       currentAd: null,
@@ -594,14 +576,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     if (video) {
       const preRollAd = adManagerRef.current?.getPreRollAd();
       if (preRollAd) {
-        console.log('🎬 Starting replay with first pre-roll ad:', preRollAd.id);
-        updateState({ currentAd: preRollAd });
+        updateState({ currentAd: preRollAd, adProgress: 0 });
         video.src = preRollAd.url;
         video.load();
-        video.play().catch(error => console.warn('Play interrupted:', error));
+        video.play().catch(error => {});
       } else {
         // No pre-roll ads, start main content
-        console.log('🎬 No pre-roll ads, starting main content');
         updateState({ playbackPhase: 'content' });
         if (streamingManagerRef.current) {
           streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
@@ -610,7 +590,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         }
         video.load();
         video.currentTime = 0;
-        video.play().catch(error => console.warn('Play interrupted:', error));
+        video.play().catch(error => {});
       }
     }
 

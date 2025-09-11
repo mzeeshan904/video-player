@@ -60,9 +60,9 @@ export class DRMManager {
         this.handleEncrypted(event, config);
       });
 
-      console.log(`DRM ${config.type} initialized successfully`);
+      // DRM initialized successfully
     } catch (error) {
-      console.error('DRM setup failed:', error);
+      // DRM setup failed
       throw error;
     }
   }

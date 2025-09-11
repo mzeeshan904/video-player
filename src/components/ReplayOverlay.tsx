@@ -13,7 +13,7 @@ const ReplayOverlay: React.FC<ReplayOverlayProps> = ({ onReplay }) => {
         </div>
         <h3 className="replay-title">Playback Complete</h3>
         <p className="replay-message">
-          You've finished watching all content and ads.
+          You've finished watching all content.
         </p>
         <button 
           className="replay-button"

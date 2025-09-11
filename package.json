@@ -1,26 +1,78 @@
 {
-  "name": "custom-media-player",
+  "name": "advanced-react-media-player",
   "version": "1.0.0",
-  "description": "Advanced custom audio/video player with ad support, DRM, interactive ads, and analytics",
-  "private": true,
+  "description": "🎬 Professional React Media Player with Ads, DRM, Analytics & Interactive Features - Production Ready",
+  "private": false,
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "USAGE_EXAMPLE.md",
+    "COMPLETE_ADS_EXAMPLE.md"
+  ],
+  "keywords": [
+    "react",
+    "video-player",
+    "audio-player",
+    "media-player",
+    "ads",
+    "advertising",
+    "drm",
+    "hls",
+    "dash",
+    "interactive-ads",
+    "analytics",
+    "typescript",
+    "streaming",
+    "widevine",
+    "playready",
+    "fairplay",
+    "picture-in-picture",
+    "responsive",
+    "mobile-friendly"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_GITHUB_USERNAME/advanced-react-media-player/issues"
+  },
   "dependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "^5.0.1",
-    "typescript": "~4.9.5",
-    "web-vitals": "^3.3.0",
-    "hls.js": "^1.4.0",
     "dashjs": "^4.7.0",
+    "hls.js": "^1.4.0",
     "shaka-player": "^4.7.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@types/jest": "^29.0.0",
+    "react-scripts": "^5.0.1",
+    "rollup": "^2.79.2",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-typescript2": "^0.36.0"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm run build:lib && npm run build:types",
+    "build:lib": "rollup -c",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:demo": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "eslintConfig": {
     "extends": [
@@ -39,8 +91,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@types/jest": "^29.0.0"
   }
 }

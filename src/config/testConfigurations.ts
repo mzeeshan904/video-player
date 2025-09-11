@@ -503,8 +503,8 @@ export const instantDemoConfig: PlayerConfig = {
         interactive: {
           type: 'poll',
           data: {
-            question: "Testing seek functionality?",
-            options: ["Yes, it works!", "Still testing", "Having issues"],
+            question: "🎪 Second Mid-roll Demo! Enjoying the experience?",
+            options: ["🔥 Loving it!", "👍 Pretty good", "😐 It's okay"],
             duration: 4
           }
         }
@@ -531,9 +531,7 @@ export const instantDemoConfig: PlayerConfig = {
   analytics: {
     enabled: true,
     onEvent: (event) => {
-      console.log('🚀 INSTANT DEMO:', event);
-      // Big visual indicator in console
-      console.log(`%c🎯 ${event.type.toUpperCase()} EVENT FIRED!`, 'color: #ff6b6b; font-size: 14px; font-weight: bold;');
+      // Analytics events are tracked internally
     }
   },
   ui: {
@@ -544,14 +542,7 @@ export const instantDemoConfig: PlayerConfig = {
   }
 };
 
-// Export all configurations
+// Export only the instant demo configuration
 export const testConfigurations = {
   '🚀 Instant Demo (AUTOPLAY)': instantDemoConfig,
-  '🎬 Full Featured Test': fullFeaturedConfig,
-  '⚡ Quick Test': quickTestConfig,
-  'Interactive Ads Showcase': interactiveAdsConfig,
-  'No Ads (Clean)': noAdsConfig,
-  'HLS Streaming': hlsStreamingConfig,
-  'DASH Streaming': dashStreamingConfig,
-  'Automotive Theme': automotiveConfig,
 };

@@ -197,7 +197,7 @@ const InteractiveAdOverlay: React.FC<InteractiveAdOverlayProps> = ({
       const data = interactive.data as OverlayData;
       return `position-${data.position}`;
     }
-    return 'position-center';
+    return 'position-bottom-left';
   };
 
   return (

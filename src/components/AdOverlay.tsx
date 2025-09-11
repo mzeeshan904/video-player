@@ -21,7 +21,7 @@ const AdOverlay: React.FC<AdOverlayProps> = ({
   onPlayPause,
 }: AdOverlayProps) => {
   // Only calculate time if playing, otherwise keep showing the same time
-  const remainingTime = Math.ceil((ad.duration * (100 - progress)) / 100);
+  const remainingTime = Math.max(0, Math.ceil((ad.duration * (100 - Math.min(progress, 100))) / 100));
   const skipCountdown = ad.skipAfter ? Math.max(0, ad.skipAfter - Math.floor((ad.duration * progress) / 100)) : 0;
 
   return (
@@ -42,11 +42,10 @@ const AdOverlay: React.FC<AdOverlayProps> = ({
               className="skip-button"
               onClick={(e) => {
                 e.stopPropagation(); // Prevent event bubbling
-                console.log('🚀 Skip button clicked!', ad.id);
                 onSkip();
               }}
             >
-              Skip Ad
+              Next
             </button>
           ) : (
             <div className="skip-countdown">

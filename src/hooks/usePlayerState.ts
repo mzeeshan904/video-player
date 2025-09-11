@@ -32,8 +32,7 @@ export const usePlayerState = (onAnalyticsEvent?: (event: AnalyticsEvent) => voi
       payload,
     };
 
-    // Log to console for debugging
-    console.log('Analytics Event:', event);
+    // Analytics event tracked
 
     // Call external analytics handler if provided
     if (onAnalyticsEvent) {
