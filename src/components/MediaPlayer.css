@@ -265,20 +265,20 @@
   left: 50%;
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.9);
-  padding: 10px 8px;
+  padding: 8px 12px;
   border-radius: 4px;
   margin-bottom: 10px;
+  min-width: 80px;
 }
 
 .volume-input {
-  width: 60px;
+  width: 80px;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
   background: rgba(255, 255, 255, 0.3);
   border-radius: 2px;
   outline: none;
-  transform: rotate(-90deg);
 }
 
 .volume-input::-webkit-slider-thumb {
