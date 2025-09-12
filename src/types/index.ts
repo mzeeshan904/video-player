@@ -4,6 +4,10 @@ export interface MediaSource {
   type: 'video' | 'audio';
   mimeType?: string;
   drm?: DRMConfig;
+  // Optional settings specific to this media content
+  qualities?: VideoQuality[];
+  subtitles?: SubtitleTrack[];
+  chapters?: ChapterTrack[];
 }
 
 export interface DRMConfig {
@@ -68,9 +72,43 @@ export interface OverlayData {
 export interface AnalyticsEvent {
   type: 'play' | 'pause' | 'seek' | 'volumechange' | 'fullscreen' | 'error' | 
         'ad_start' | 'ad_complete' | 'ad_skip' | 'ad_click' | 'ad_interaction' |
-        'buffering_start' | 'buffering_end' | 'complete' | 'replay';
+        'buffering_start' | 'buffering_end' | 'complete' | 'replay' |
+        'quality_change' | 'subtitle_change' | 'speed_change' | 'settings_open' | 'settings_close';
   timestamp: number;
   payload?: any;
+}
+
+// Settings and Quality Types
+export interface VideoQuality {
+  id: string;
+  label: string;
+  height: number;
+  width: number;
+  bitrate?: number;
+  url?: string;
+}
+
+export interface SubtitleTrack {
+  id: string;
+  label: string;
+  language: string;
+  url: string;
+  isDefault?: boolean;
+}
+
+export interface ChapterTrack {
+  id: string;
+  title: string;
+  startTime: number;
+  endTime?: number;
+}
+
+export interface PlayerSettings {
+  playbackSpeed?: number;
+  autoplay?: boolean;
+  loop?: boolean;
+  skipSilence?: boolean;
+  pictureInPicture?: boolean;
 }
 
 export interface PlayerConfig {
@@ -87,7 +125,9 @@ export interface PlayerConfig {
     muted?: boolean;
     loop?: boolean;
     showControls?: boolean;
+    showSettings?: boolean;
   };
+  settings?: PlayerSettings;
 }
 
 // Player State Types
@@ -108,4 +148,9 @@ export interface PlayerState {
   mainContentTime: number; // Track main content time separately
   previousTime: number; // Track previous time to detect seeks
   showReplay: boolean; // Show replay overlay when all content is complete
+  // Settings state
+  currentQuality: VideoQuality | null;
+  currentSubtitle: SubtitleTrack | null;
+  playbackSpeed: number;
+  showSettings: boolean;
 }

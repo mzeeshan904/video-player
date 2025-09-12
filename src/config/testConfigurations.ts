@@ -439,7 +439,101 @@ export const instantDemoConfig: PlayerConfig = {
   src: {
     url: sampleVideos.mainContent[0].url, // Big Buck Bunny
     type: 'video',
-    mimeType: 'video/mp4'
+    mimeType: 'video/mp4',
+    // ✨ Video-specific quality options
+    qualities: [
+      {
+        id: 'quality-1080p',
+        label: '1080p Full HD',
+        height: 1080,
+        width: 1920,
+        bitrate: 5000000,
+        url: sampleVideos.mainContent[0].url // Same URL for demo, in real use different URLs
+      },
+      {
+        id: 'quality-720p',
+        label: '720p HD',
+        height: 720,
+        width: 1280,
+        bitrate: 2500000,
+        url: sampleVideos.mainContent[0].url
+      },
+      {
+        id: 'quality-480p', 
+        label: '480p',
+        height: 480,
+        width: 854,
+        bitrate: 1000000,
+        url: sampleVideos.mainContent[0].url
+      },
+      {
+        id: 'quality-360p',
+        label: '360p',
+        height: 360,
+        width: 640,
+        bitrate: 500000,
+        url: sampleVideos.mainContent[0].url
+      }
+    ],
+    // ✨ Video-specific subtitle tracks
+    subtitles: [
+      {
+        id: 'subtitle-en',
+        label: 'English',
+        language: 'en',
+        url: 'https://example.com/subtitles/big-buck-bunny-en.vtt',
+        isDefault: true
+      },
+      {
+        id: 'subtitle-es',
+        label: 'Español',
+        language: 'es', 
+        url: 'https://example.com/subtitles/big-buck-bunny-es.vtt'
+      },
+      {
+        id: 'subtitle-fr',
+        label: 'Français',
+        language: 'fr',
+        url: 'https://example.com/subtitles/big-buck-bunny-fr.vtt'
+      },
+      {
+        id: 'subtitle-de',
+        label: 'Deutsch',
+        language: 'de',
+        url: 'https://example.com/subtitles/big-buck-bunny-de.vtt'
+      }
+    ],
+    // ✨ Video chapters (optional)
+    chapters: [
+      {
+        id: 'chapter-intro',
+        title: 'Introduction',
+        startTime: 0
+      },
+      {
+        id: 'chapter-forest',
+        title: 'Forest Scene',
+        startTime: 30
+      },
+      {
+        id: 'chapter-adventure',
+        title: 'The Adventure Begins',
+        startTime: 120
+      },
+      {
+        id: 'chapter-finale',
+        title: 'Grand Finale',
+        startTime: 240
+      }
+    ]
+  },
+  // Default player settings
+  settings: {
+    playbackSpeed: 1,
+    autoplay: true,
+    loop: false,
+    skipSilence: false,
+    pictureInPicture: true
   },
   ads: {
     preRoll: [
@@ -538,7 +632,8 @@ export const instantDemoConfig: PlayerConfig = {
     theme: 'dark',
     autoplay: true,  // ✅ AUTOPLAY ENABLED
     muted: true,
-    showControls: true
+    showControls: true,
+    showSettings: true  // ✅ SETTINGS MENU ENABLED
   }
 };
 

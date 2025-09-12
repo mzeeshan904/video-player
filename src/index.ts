@@ -3,6 +3,7 @@ import './components/MediaPlayer.css';
 
 // Main library exports
 export { default as MediaPlayer } from './components/MediaPlayer';
+export { default as SettingsMenu } from './components/SettingsMenu';
 
 // Type exports (both as types and interfaces)
 export type {
@@ -18,6 +19,10 @@ export type {
   CTAData,
   OverlayData,
   AnalyticsEvent,
+  VideoQuality,
+  SubtitleTrack,
+  ChapterTrack,
+  PlayerSettings,
 } from './types';
 
 // Also export types as regular exports for runtime access

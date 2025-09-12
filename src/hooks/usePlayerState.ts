@@ -19,6 +19,11 @@ export const usePlayerState = (onAnalyticsEvent?: (event: AnalyticsEvent) => voi
     mainContentTime: 0,
     previousTime: 0,
     showReplay: false,
+    // Settings state
+    currentQuality: null,
+    currentSubtitle: null,
+    playbackSpeed: 1,
+    showSettings: false,
   });
 
   const updateState = useCallback((updates: Partial<PlayerState>) => {

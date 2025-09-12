@@ -14,7 +14,183 @@ const App: React.FC = () => {
     src: {
       url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
       type: 'video' as const,
-      mimeType: 'video/mp4'
+      mimeType: 'video/mp4',
+      
+      // 📺 Video Quality Options for Big Buck Bunny
+      qualities: [
+        {
+          id: 'quality-4k',
+          label: '4K Ultra HD',
+          height: 2160,
+          width: 3840,
+          bitrate: 15000000,
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        },
+        {
+          id: 'quality-1080p',
+          label: '1080p Full HD',
+          height: 1080,
+          width: 1920,
+          bitrate: 5000000,
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        },
+        {
+          id: 'quality-720p',
+          label: '720p HD',
+          height: 720,
+          width: 1280,
+          bitrate: 2500000,
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        },
+        {
+          id: 'quality-480p',
+          label: '480p SD',
+          height: 480,
+          width: 854,
+          bitrate: 1000000,
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        },
+        {
+          id: 'quality-360p',
+          label: '360p Mobile',
+          height: 360,
+          width: 640,
+          bitrate: 500000,
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+        }
+      ],
+
+      // 📝 Subtitle Tracks for Big Buck Bunny
+      subtitles: [
+        {
+          id: 'subtitle-en-us',
+          label: 'English (US)',
+          language: 'en-US',
+          url: 'https://example.com/subtitles/big-buck-bunny/en-us.vtt',
+          isDefault: true
+        },
+        {
+          id: 'subtitle-en-uk',
+          label: 'English (UK)',
+          language: 'en-GB',
+          url: 'https://example.com/subtitles/big-buck-bunny/en-gb.vtt'
+        },
+        {
+          id: 'subtitle-es-es',
+          label: 'Español (España)',
+          language: 'es-ES',
+          url: 'https://example.com/subtitles/big-buck-bunny/es-es.vtt'
+        },
+        {
+          id: 'subtitle-es-mx',
+          label: 'Español (México)',
+          language: 'es-MX',
+          url: 'https://example.com/subtitles/big-buck-bunny/es-mx.vtt'
+        },
+        {
+          id: 'subtitle-fr-fr',
+          label: 'Français (France)',
+          language: 'fr-FR',
+          url: 'https://example.com/subtitles/big-buck-bunny/fr-fr.vtt'
+        },
+        {
+          id: 'subtitle-de-de',
+          label: 'Deutsch',
+          language: 'de-DE',
+          url: 'https://example.com/subtitles/big-buck-bunny/de-de.vtt'
+        },
+        {
+          id: 'subtitle-it-it',
+          label: 'Italiano',
+          language: 'it-IT',
+          url: 'https://example.com/subtitles/big-buck-bunny/it-it.vtt'
+        },
+        {
+          id: 'subtitle-pt-br',
+          label: 'Português (Brasil)',
+          language: 'pt-BR',
+          url: 'https://example.com/subtitles/big-buck-bunny/pt-br.vtt'
+        },
+        {
+          id: 'subtitle-ru-ru',
+          label: 'Русский',
+          language: 'ru-RU',
+          url: 'https://example.com/subtitles/big-buck-bunny/ru-ru.vtt'
+        },
+        {
+          id: 'subtitle-ja-jp',
+          label: '日本語',
+          language: 'ja-JP',
+          url: 'https://example.com/subtitles/big-buck-bunny/ja-jp.vtt'
+        },
+        {
+          id: 'subtitle-ko-kr',
+          label: '한국어',
+          language: 'ko-KR',
+          url: 'https://example.com/subtitles/big-buck-bunny/ko-kr.vtt'
+        },
+        {
+          id: 'subtitle-zh-cn',
+          label: '中文 (简体)',
+          language: 'zh-CN',
+          url: 'https://example.com/subtitles/big-buck-bunny/zh-cn.vtt'
+        },
+        {
+          id: 'subtitle-ar-sa',
+          label: 'العربية',
+          language: 'ar-SA',
+          url: 'https://example.com/subtitles/big-buck-bunny/ar-sa.vtt'
+        }
+      ],
+
+      // 📚 Video Chapters for Easy Navigation
+      chapters: [
+        {
+          id: 'opening-credits',
+          title: 'Opening Credits',
+          startTime: 0
+        },
+        {
+          id: 'character-intro',
+          title: 'Meet Big Buck Bunny',
+          startTime: 15
+        },
+        {
+          id: 'forest-scene',
+          title: 'Peaceful Forest',
+          startTime: 45
+        },
+        {
+          id: 'flying-squirrels',
+          title: 'Flying Squirrels Appear',
+          startTime: 120
+        },
+        {
+          id: 'the-conflict',
+          title: 'The Conflict Begins',
+          startTime: 180
+        },
+        {
+          id: 'bunny-revenge',
+          title: 'Bunny\'s Revenge',
+          startTime: 240
+        },
+        {
+          id: 'apple-throw',
+          title: 'The Apple Throw',
+          startTime: 300
+        },
+        {
+          id: 'resolution',
+          title: 'Resolution',
+          startTime: 360
+        },
+        {
+          id: 'end-credits',
+          title: 'End Credits',
+          startTime: 420
+        }
+      ]
     },
     ads: {
       // 🎬 PRE-ROLL ADS (2 ads before main content)
@@ -112,7 +288,9 @@ const App: React.FC = () => {
     ui: {
       theme: 'dark' as const,
       autoplay: true,
-      muted: true
+      muted: true,
+      showControls: true,
+      showSettings: true  // ✨ Enable settings menu with quality, subtitles, speed, and chapters
     },
     analytics: {
       enabled: true,
@@ -143,6 +321,25 @@ const App: React.FC = () => {
             break;
           case 'seek':
             console.log(`⏯️ User seeked to: ${event.payload.currentTime}s`);
+            break;
+          // Settings events
+          case 'quality_change':
+            console.log(`🎥 Quality changed to: ${event.payload.quality?.label || 'Auto'}`);
+            break;
+          case 'subtitle_change':
+            console.log(`📝 Subtitles changed to: ${event.payload.subtitle?.label || 'Off'}`);
+            break;
+          case 'speed_change':
+            console.log(`⚡ Playback speed changed to: ${event.payload.speed}x`);
+            break;
+          case 'chapter_change':
+            console.log(`📚 Chapter selected: ${event.payload.chapter?.title}`);
+            break;
+          case 'settings_open':
+            console.log(`⚙️ Settings menu opened`);
+            break;
+          case 'settings_close':
+            console.log(`⚙️ Settings menu closed`);
             break;
         }
       }

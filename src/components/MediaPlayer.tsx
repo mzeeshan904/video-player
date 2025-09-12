@@ -9,6 +9,8 @@ import PlayerControls from './PlayerControls';
 import AdOverlay from './AdOverlay';
 import InteractiveAdOverlay from './InteractiveAdOverlay';
 import ReplayOverlay from './ReplayOverlay';
+import SettingsMenu from './SettingsMenu';
+import SubtitleOverlay from './SubtitleOverlay';
 import './MediaPlayer.css';
 
 interface MediaPlayerProps {
@@ -72,6 +74,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           updateState({ volume: video.volume, muted: video.muted });
         }
 
+        // Initialize default subtitle track
+        if (config.src.subtitles && config.src.subtitles.length > 0) {
+          const defaultSubtitle = config.src.subtitles.find(sub => sub.isDefault) || config.src.subtitles[0];
+          if (defaultSubtitle) {
+            // Set default subtitle in state
+            updateState({ currentSubtitle: defaultSubtitle });
+          }
+        }
+
         // Check for pre-roll ads (only on first initialization)
         if (!isInitializedRef.current) {
           isInitializedRef.current = true;
@@ -90,6 +101,8 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               video.src = config.src.url;
             }
             video.load();
+            
+            // Subtitles handled by custom overlay
           }
         }
 
@@ -269,6 +282,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               video.addEventListener('loadeddata', onLoadedData);
             });
             video.currentTime = state.mainContentTime; // Resume from where we were
+            // Subtitles handled by custom overlay
             await video.play().catch(error => {});
           }
         } else if (state.playbackPhase === 'content') {
@@ -295,6 +309,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           video.currentTime = resumeTime;
           console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
           trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_complete_resume' });
+          // Subtitles handled by custom overlay
           await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
           // Check for more post-roll ads
@@ -481,6 +496,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               video.addEventListener('loadeddata', onLoadedData);
             });
             video.currentTime = state.mainContentTime;
+            // Subtitles handled by custom overlay
             await video.play().catch(error => {});
           }
         } else if (state.playbackPhase === 'content') {
@@ -507,6 +523,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           video.currentTime = resumeTime;
           console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
           trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_skip_resume' });
+          // Subtitles handled by custom overlay
           await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
           // Check for more post-roll ads
@@ -616,6 +633,45 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     handlePlayPause();
   }, [state.isPlaying, handlePlayPause]);
 
+  // Settings handlers
+  const handleSettings = useCallback(() => {
+    updateState({ showSettings: !state.showSettings });
+    trackEvent(state.showSettings ? 'settings_close' : 'settings_open', {});
+  }, [state.showSettings, updateState, trackEvent]);
+
+  const handleQualityChange = useCallback((quality: any) => {
+    updateState({ currentQuality: quality });
+    trackEvent('quality_change', { quality });
+  }, [updateState, trackEvent]);
+
+  // Simplified subtitle management - using custom overlay instead of HTML5 tracks
+
+  const handleSubtitleChange = useCallback((subtitle: any) => {
+    console.log('🎬 SIMPLE: Subtitle changed to:', subtitle?.label || 'Off');
+    updateState({ currentSubtitle: subtitle });
+    trackEvent('subtitle_change', { subtitle });
+  }, [updateState, trackEvent]);
+
+  const handleSpeedChange = useCallback((speed: number) => {
+    updateState({ playbackSpeed: speed });
+    trackEvent('speed_change', { speed });
+    
+    const video = videoRef.current;
+    if (video) {
+      video.playbackRate = speed;
+    }
+  }, [updateState, trackEvent]);
+
+  const handleChapterSelect = useCallback((chapter: any) => {
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = chapter.startTime;
+      trackEvent('chapter_change', { chapter });
+    }
+  }, [trackEvent]);
+
+  // No complex subtitle management needed - using custom overlay
+
   // Fullscreen change listener
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -646,6 +702,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           className="video-element"
           playsInline
           preload="metadata"
+          crossOrigin="anonymous"
         />
         
         {state.buffering && (
@@ -691,6 +748,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         {state.showReplay && (
           <ReplayOverlay onReplay={handleReplay} />
         )}
+
+        {/* Custom Subtitle Overlay - bypasses CORS issues */}
+        <SubtitleOverlay
+          subtitle={state.currentSubtitle}
+          currentTime={state.currentTime}
+          isVisible={!state.currentAd && !!state.currentSubtitle}
+        />
       </div>
 
       {(config.ui?.showControls !== false) && !state.currentAd && (
@@ -702,9 +766,24 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           onMute={handleMute}
           onFullscreen={handleFullscreen}
           onPictureInPicture={togglePiP}
+          onSettings={handleSettings}
           isPiPSupported={isPiPSupported}
           isPiPActive={isPiPActive}
           isAd={!!state.currentAd}
+        />
+      )}
+
+      {state.showSettings && config.ui?.showSettings && (
+        <SettingsMenu
+          state={state}
+          qualities={config.src.qualities}
+          subtitles={config.src.subtitles}
+          chapters={config.src.chapters}
+          onQualityChange={handleQualityChange}
+          onSubtitleChange={handleSubtitleChange}
+          onSpeedChange={handleSpeedChange}
+          onChapterSelect={handleChapterSelect}
+          onClose={handleSettings}
         />
       )}
     </div>
