@@ -89,16 +89,12 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({ subtitle, currentTime
 
     const loadSubtitles = async () => {
       try {
-        console.log('📥 Loading subtitle overlay:', subtitle.label);
         const response = await fetch(subtitle.url);
         const content = await response.text();
-        console.log('📝 Subtitle content preview:', content.substring(0, 200));
         
         const parsedCues = parseWebVTT(content);
-        console.log('🎬 Parsed subtitle cues:', parsedCues.length);
         setCues(parsedCues);
       } catch (error) {
-        console.error('❌ Failed to load subtitle overlay:', error);
         setCues([]);
       }
     };

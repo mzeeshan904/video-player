@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PlayerState } from '../types';
+import { PlayerState, ChapterTrack } from '../types';
 
 interface PlayerControlsProps {
   state: PlayerState;
@@ -13,6 +13,8 @@ interface PlayerControlsProps {
   isPiPSupported?: boolean;
   isPiPActive?: boolean;
   isAd: boolean;
+  chapters?: ChapterTrack[];
+  onThumbnailHover?: (hoveredTime: number, relativeX: number, seekBarWidth: number, isVisible: boolean) => void;
 }
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
@@ -27,6 +29,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   isPiPSupported = false,
   isPiPActive = false,
   isAd,
+  chapters,
+  onThumbnailHover,
 }) => {
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -120,6 +124,26 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  // Handle hover for thumbnail preview with improved positioning
+  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isAd || !onThumbnailHover || !progressRef.current) return;
+
+    const rect = progressRef.current.getBoundingClientRect();
+    const relativeX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const hoverRatio = relativeX / rect.width;
+    const hoveredTime = hoverRatio * state.duration;
+
+    // Debug logging removed for clean console
+
+    onThumbnailHover(hoveredTime, relativeX, rect.width, true);
+  };
+
+  const handleProgressLeave = () => {
+    if (onThumbnailHover) {
+      onThumbnailHover(-1, 0, 0, false); // Use -1 to indicate invalid/hidden state
+    }
+  };
+
   const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
 
   return (
@@ -130,8 +154,30 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
         className={`progress-container ${isAd ? 'disabled' : ''}`}
         onClick={handleProgressClick}
         onMouseDown={handleProgressMouseDown}
+        onMouseMove={handleProgressHover}
+        onMouseLeave={handleProgressLeave}
       >
         <div className="progress-bar">
+          {/* Chapter Markers */}
+          {chapters && !isAd && state.duration > 0 && chapters.map((chapter) => {
+            const chapterPosition = (chapter.startTime / state.duration) * 100;
+            // Only show chapters that are within the video duration (0-100%)
+            if (chapterPosition > 100) return null;
+            
+            return (
+              <div
+                key={chapter.id}
+                className="chapter-marker"
+                style={{ left: `${chapterPosition}%` }}
+                title={chapter.title}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSeek(chapter.startTime);
+                }}
+              />
+            );
+          })}
+          
           <div 
             className="progress-filled"
             style={{ width: `${progress}%` }}

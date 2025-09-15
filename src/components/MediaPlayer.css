@@ -278,8 +278,147 @@
   transition: opacity 0.2s ease;
 }
 
+.chapter-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.2s ease;
+  border-radius: 1px;
+}
+
+.chapter-marker:hover {
+  background: rgba(255, 255, 255, 1);
+  width: 4px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+}
+
 .progress-container:hover .progress-handle {
   opacity: 1;
+}
+
+/* Thumbnail Preview */
+.thumbnail-preview {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.thumbnail-container {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.thumbnail-image {
+  width: 160px;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+}
+
+.thumbnail-placeholder {
+  width: 160px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.thumbnail-loading {
+  width: 160px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.thumbnail-time {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Debug styles for development */
+.debug-text {
+  font-size: 8px;
+  color: #888;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.debug-info {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+  margin-top: 2px;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* Responsive thumbnail preview */
+@media (max-width: 768px) {
+  .thumbnail-image,
+  .thumbnail-placeholder,
+  .thumbnail-loading {
+    width: 120px;
+    height: 68px;
+  }
+  
+  .thumbnail-time {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .debug-info {
+    font-size: 8px;
+  }
 }
 
 /* Controls Bar */

@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { VideoQuality, SubtitleTrack, ChapterTrack, PlayerState } from '../types';
+import { VideoQuality, SubtitleTrack, PlayerState } from '../types';
 
 interface SettingsMenuProps {
   state: PlayerState;
   qualities?: VideoQuality[];
   subtitles?: SubtitleTrack[];
-  chapters?: ChapterTrack[];
   onQualityChange: (quality: VideoQuality | null) => void;
   onSubtitleChange: (subtitle: SubtitleTrack | null) => void;
   onSpeedChange: (speed: number) => void;
-  onChapterSelect: (chapter: ChapterTrack) => void;
   onClose: () => void;
 }
 
@@ -17,14 +15,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
   state,
   qualities = [],
   subtitles = [],
-  chapters = [],
   onQualityChange,
   onSubtitleChange,
   onSpeedChange,
-  onChapterSelect,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'quality' | 'subtitles' | 'speed' | 'chapters'>('speed');
+  const [activeTab, setActiveTab] = useState<'quality' | 'subtitles' | 'speed'>('speed');
 
   // Determine available tabs
   const availableTabs = useMemo(() => {
@@ -32,9 +28,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
     if (qualities.length > 0) tabs.push('quality');
     if (subtitles.length > 0) tabs.push('subtitles');
     tabs.push('speed'); // Always available
-    if (chapters.length > 0) tabs.push('chapters');
     return tabs;
-  }, [qualities.length, subtitles.length, chapters.length]);
+  }, [qualities.length, subtitles.length]);
 
   // Set default tab to first available
   useEffect(() => {
@@ -86,14 +81,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
           >
             Speed
           </button>
-          {chapters.length > 0 && (
-            <button 
-              className={`settings-tab ${activeTab === 'chapters' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chapters')}
-            >
-              Chapters
-            </button>
-          )}
         </div>
 
         <div className="settings-content">
@@ -184,32 +171,11 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
             </div>
           )}
 
-          {activeTab === 'chapters' && (
-            <div className="settings-section">
-              <h4>Chapters</h4>
-              <div className="settings-options">
-                {chapters.map((chapter) => (
-                  <label key={chapter.id} className="settings-option" onClick={() => onChapterSelect(chapter)}>
-                    <span className="option-label">{chapter.title}</span>
-                    <span className="option-description">
-                      {formatTime(chapter.startTime)}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Helper function to format time
-const formatTime = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-};
 
 export default SettingsMenu;

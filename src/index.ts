@@ -4,6 +4,7 @@ import './components/MediaPlayer.css';
 // Main library exports
 export { default as MediaPlayer } from './components/MediaPlayer';
 export { default as SettingsMenu } from './components/SettingsMenu';
+export { default as ThumbnailPreview } from './components/ThumbnailPreview';
 
 // Type exports (both as types and interfaces)
 export type {

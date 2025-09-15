@@ -11,6 +11,7 @@ import InteractiveAdOverlay from './InteractiveAdOverlay';
 import ReplayOverlay from './ReplayOverlay';
 import SettingsMenu from './SettingsMenu';
 import SubtitleOverlay from './SubtitleOverlay';
+import ThumbnailPreview from './ThumbnailPreview';
 import './MediaPlayer.css';
 
 interface MediaPlayerProps {
@@ -27,6 +28,14 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const resumeTimeRef = useRef<number>(0);
   const { state, updateState, trackEvent } = usePlayerState(config.analytics?.onEvent);
   const { isPiPSupported, isPiPActive, togglePiP } = usePictureInPicture(videoRef);
+  
+  // Thumbnail preview state
+  const [thumbnailState, setThumbnailState] = useState({
+    isVisible: false,
+    hoveredTime: 0,
+    relativeX: 0,
+    seekBarWidth: 0
+  });
 
   // Initialize managers only once using useMemo
   useMemo(() => {
@@ -153,7 +162,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           
           if (midRollAd) {
             // Store current main content time before switching to ad
-            console.log('🎬 STORING mainContentTime before mid-roll:', currentTime);
             // Store resume time in a ref to avoid state race conditions
             resumeTimeRef.current = currentTime;
             updateState({ 
@@ -288,7 +296,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         } else if (state.playbackPhase === 'content') {
           // Mid-roll ad completed, return to main content
           const resumeTime = resumeTimeRef.current;
-          console.log('✅ COMPLETING mid-roll, resumeTime from ref:', resumeTime);
           updateState({ currentAd: null, showSkipButton: false });
           if (streamingManagerRef.current) {
             streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
@@ -305,9 +312,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             video.addEventListener('loadeddata', onLoadedData);
           });
           // Ensure we resume from the correct time
-          console.log('🎯 SETTING video.currentTime to:', resumeTime);
           video.currentTime = resumeTime;
-          console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
           trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_complete_resume' });
           // Subtitles handled by custom overlay
           await video.play().catch(error => {});
@@ -502,7 +507,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         } else if (state.playbackPhase === 'content') {
           // Mid-roll ad skipped, return to main content
           const resumeTime = resumeTimeRef.current;
-          console.log('⏭️ SKIPPING mid-roll, resumeTime from ref:', resumeTime);
           updateState({ currentAd: null, showSkipButton: false });
           if (streamingManagerRef.current) {
             streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
@@ -519,9 +523,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             video.addEventListener('loadeddata', onLoadedData);
           });
           // Ensure we resume from the correct time
-          console.log('🎯 SETTING video.currentTime to:', resumeTime);
           video.currentTime = resumeTime;
-          console.log('✅ ACTUAL video.currentTime after setting:', video.currentTime);
           trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_skip_resume' });
           // Subtitles handled by custom overlay
           await video.play().catch(error => {});
@@ -647,7 +649,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   // Simplified subtitle management - using custom overlay instead of HTML5 tracks
 
   const handleSubtitleChange = useCallback((subtitle: any) => {
-    console.log('🎬 SIMPLE: Subtitle changed to:', subtitle?.label || 'Off');
     updateState({ currentSubtitle: subtitle });
     trackEvent('subtitle_change', { subtitle });
   }, [updateState, trackEvent]);
@@ -662,13 +663,37 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     }
   }, [updateState, trackEvent]);
 
-  const handleChapterSelect = useCallback((chapter: any) => {
+  // Handle thumbnail hover (optimized to prevent unnecessary updates)
+  const handleThumbnailHover = useCallback((hoveredTime: number, relativeX: number, seekBarWidth: number, isVisible: boolean) => {
+    setThumbnailState({
+      isVisible,
+      hoveredTime,
+      relativeX,
+      seekBarWidth
+    });
+  }, []);
+
+  // Pre-warm thumbnail system when video loads
+  useEffect(() => {
     const video = videoRef.current;
-    if (video) {
-      video.currentTime = chapter.startTime;
-      trackEvent('chapter_change', { chapter });
+    if (!video) return;
+
+    const onLoadedMetadata = () => {
+      // Main video metadata loaded - thumbnail system ready
+    };
+
+    // Listen for metadata load to enable immediate thumbnails
+    if (video.readyState >= 1) {
+      onLoadedMetadata();
+    } else {
+      video.addEventListener('loadedmetadata', onLoadedMetadata);
     }
-  }, [trackEvent]);
+
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+    };
+  }, []);
+
 
   // No complex subtitle management needed - using custom overlay
 
@@ -770,6 +795,8 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           isPiPSupported={isPiPSupported}
           isPiPActive={isPiPActive}
           isAd={!!state.currentAd}
+          chapters={config.src.chapters}
+          onThumbnailHover={handleThumbnailHover}
         />
       )}
 
@@ -778,14 +805,22 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           state={state}
           qualities={config.src.qualities}
           subtitles={config.src.subtitles}
-          chapters={config.src.chapters}
           onQualityChange={handleQualityChange}
           onSubtitleChange={handleSubtitleChange}
           onSpeedChange={handleSpeedChange}
-          onChapterSelect={handleChapterSelect}
           onClose={handleSettings}
         />
       )}
+
+      {/* Thumbnail Preview */}
+      <ThumbnailPreview
+        videoElement={videoRef.current}
+        isVisible={thumbnailState.isVisible}
+        hoveredTime={thumbnailState.hoveredTime}
+        relativeX={thumbnailState.relativeX}
+        seekBarWidth={thumbnailState.seekBarWidth}
+        duration={state.duration}
+      />
     </div>
   );
 };

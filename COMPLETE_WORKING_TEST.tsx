@@ -48,13 +48,13 @@ function App() {
         },
       ],
 
-      // Chapters for your video
+      // Chapters for your video (35 seconds total)
       chapters: [
         { id: "start", title: "🎬 Início", startTime: 0 },
-        { id: "part1", title: "🎭 Primeira Parte", startTime: 15 },
-        { id: "part2", title: "🎪 Segunda Parte", startTime: 30 },
-        { id: "climax", title: "💥 Clímax", startTime: 45 },
-        { id: "ending", title: "🏁 Final", startTime: 60 },
+        { id: "part1", title: "🎭 Primeira Parte", startTime: 8 },
+        { id: "part2", title: "🎪 Segunda Parte", startTime: 16 },
+        { id: "climax", title: "💥 Clímax", startTime: 24 },
+        { id: "ending", title: "🏁 Final", startTime: 32 },
       ],
     },
 
