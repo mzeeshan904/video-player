@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import DemoApp from './App';
+import SimpleTest from './SimpleTest';
+import ComprehensiveTestRunner from '../COMPREHENSIVE_TEST_RUNNER';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -9,6 +10,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <DemoApp />
+    {/* <SimpleTest /> */}
+    <ComprehensiveTestRunner />
   </React.StrictMode>
 );

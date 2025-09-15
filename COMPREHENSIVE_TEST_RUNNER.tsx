@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import MediaPlayer from '../src/components/MediaPlayer';
-import '../src/components/MediaPlayer.css';
-import { PlayerConfig } from '../src/types';
+import { MediaPlayer } from './src';
+import { PlayerConfig } from './src/types';
+import './src/components/MediaPlayer.css';
+
+// Import test configurations
+import DashHlsTest from './DASH_HLS_TEST';
+import DrmTest from './DRM_TEST';
 
 // 🧪 Comprehensive Test Runner Application
-const DemoApp: React.FC = () => {
+const ComprehensiveTestRunner: React.FC = () => {
+  const [activeTestSuite, setActiveTestSuite] = useState<string>('overview');
+
   // Quick test configurations for immediate verification
   const quickTests: Record<string, { title: string; config: PlayerConfig; category: string }> = {
     'basic-mp4': {
@@ -17,7 +23,7 @@ const DemoApp: React.FC = () => {
           mimeType: 'video/mp4'
         },
         ui: { showControls: true, autoplay: false, theme: 'dark' },
-        analytics: { enabled: true, onEvent: (e) => console.log('🎬 Basic MP4:', e) }
+        analytics: { enabled: true, onEvent: (e) => console.log('Basic MP4:', e) }
       }
     },
     
@@ -31,7 +37,7 @@ const DemoApp: React.FC = () => {
           mimeType: 'application/x-mpegURL'
         },
         ui: { showControls: true, autoplay: false, theme: 'dark' },
-        analytics: { enabled: true, onEvent: (e) => console.log('📱 HLS Quick:', e) }
+        analytics: { enabled: true, onEvent: (e) => console.log('HLS Quick:', e) }
       }
     },
     
@@ -45,7 +51,25 @@ const DemoApp: React.FC = () => {
           mimeType: 'application/dash+xml'
         },
         ui: { showControls: true, autoplay: false, theme: 'dark' },
-        analytics: { enabled: true, onEvent: (e) => console.log('📡 DASH Quick:', e) }
+        analytics: { enabled: true, onEvent: (e) => console.log('DASH Quick:', e) }
+      }
+    },
+    
+    'drm-quick': {
+      title: '🔐 DRM Protected (Quick)',
+      category: 'DRM',
+      config: {
+        src: {
+          url: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd',
+          type: 'video',
+          mimeType: 'application/dash+xml',
+          drm: {
+            type: 'widevine',
+            licenseUrl: 'https://cwip-shaka-proxy.appspot.com/no_auth'
+          }
+        },
+        ui: { showControls: true, autoplay: false, theme: 'dark' },
+        analytics: { enabled: true, onEvent: (e) => console.log('DRM Quick:', e) }
       }
     },
     
@@ -83,7 +107,7 @@ const DemoApp: React.FC = () => {
           }]
         },
         ui: { showControls: true, autoplay: false, theme: 'dark' },
-        analytics: { enabled: true, onEvent: (e) => console.log('📺 Ads Complete:', e) }
+        analytics: { enabled: true, onEvent: (e) => console.log('Ads Complete:', e) }
       }
     }
   };
@@ -101,6 +125,7 @@ const DemoApp: React.FC = () => {
       // Format Support
       mp4Support: !!video.canPlayType('video/mp4'),
       webmSupport: !!video.canPlayType('video/webm'),
+      oggSupport: !!video.canPlayType('video/ogg'),
       
       // Streaming Support
       hlsNativeSupport: !!video.canPlayType('application/vnd.apple.mpegurl'),
@@ -140,6 +165,10 @@ const DemoApp: React.FC = () => {
       console.log('URL:', test.config.src.url);
       console.log('MIME Type:', test.config.src.mimeType);
       
+      if (test.config.src.drm) {
+        console.log('DRM Type:', test.config.src.drm.type);
+      }
+      
       if (test.config.ads) {
         console.log('Ads configured:', {
           preRoll: test.config.ads.preRoll?.length || 0,
@@ -150,35 +179,8 @@ const DemoApp: React.FC = () => {
     });
   };
 
-  return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#0a0a0a', 
-      color: '#fff',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      padding: '20px'
-    }}>
-      {/* Navigation Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '30px',
-        padding: '20px',
-        backgroundColor: '#1a1a1a',
-        borderRadius: '10px'
-      }}>
-        <h1 style={{ 
-          fontSize: '2.5rem', 
-          margin: 0,
-          background: 'linear-gradient(135deg, #ff0000, #ff6b6b, #6bb6ff, #ffd700)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          🧪 Media Player Test Suite
-        </h1>
-      </div>
-
+  const renderOverview = () => (
+    <div>
       {/* System Overview */}
       <div style={{ 
         backgroundColor: '#1a1a1a', 
@@ -215,6 +217,7 @@ const DemoApp: React.FC = () => {
             <div>HTML5 Video: {capabilities.html5Video ? '✅' : '❌'}</div>
             <div>MP4: {capabilities.mp4Support ? '✅' : '❌'}</div>
             <div>WebM: {capabilities.webmSupport ? '✅' : '❌'}</div>
+            <div>OGG: {capabilities.oggSupport ? '✅' : '❌'}</div>
           </div>
 
           <div style={{ padding: '15px', backgroundColor: '#333', borderRadius: '8px' }}>
@@ -297,43 +300,191 @@ const DemoApp: React.FC = () => {
         </div>
       </div>
 
-      {/* Instructions */}
+      {/* Test Suite Navigation */}
       <div style={{ 
         backgroundColor: '#1a1a1a', 
         borderRadius: '10px', 
-        padding: '20px'
+        padding: '20px' 
       }}>
-        <h3 style={{ marginBottom: '15px', color: '#ff6b6b' }}>📝 Testing Instructions</h3>
-        <div style={{ lineHeight: '1.8' }}>
-          <ol>
-            <li><strong>Run Diagnostics:</strong> Click the green button to check system capabilities</li>
-            <li><strong>Select Tests:</strong> Choose different test categories from the buttons above</li>
-            <li><strong>Test Playback:</strong> Click play on videos to verify functionality</li>
-            <li><strong>Monitor Console:</strong> Open browser console (F12) for detailed logs</li>
-            <li><strong>Test Features:</strong> Try controls, quality switching, and seeking</li>
-          </ol>
-        </div>
+        <h2 style={{ marginBottom: '20px' }}>🧪 Comprehensive Test Suites</h2>
         
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '15px', 
-          backgroundColor: '#333', 
-          borderRadius: '5px',
-          fontSize: '0.9rem'
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+          <div
+            onClick={() => setActiveTestSuite('dash-hls')}
+            style={{
+              padding: '25px',
+              backgroundColor: '#333',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              border: '2px solid transparent',
+              ':hover': { backgroundColor: '#444' }
+            }}
+          >
+            <h3 style={{ marginBottom: '15px', color: '#6bb6ff' }}>📡 DASH & HLS Tests</h3>
+            <p style={{ opacity: 0.8, lineHeight: '1.5' }}>
+              Comprehensive testing for adaptive bitrate streaming protocols including 
+              HLS (HTTP Live Streaming) and DASH (Dynamic Adaptive Streaming) with 
+              quality switching, error handling, and browser compatibility tests.
+            </p>
+            <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#6bb6ff' }}>
+              ✓ Apple HLS Streams ✓ DASH Manifests ✓ Quality Switching ✓ Error Recovery
+            </div>
+          </div>
+
+          <div
+            onClick={() => setActiveTestSuite('drm')}
+            style={{
+              padding: '25px',
+              backgroundColor: '#333',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              border: '2px solid transparent'
+            }}
+          >
+            <h3 style={{ marginBottom: '15px', color: '#ffd700' }}>🔐 DRM Tests</h3>
+            <p style={{ opacity: 0.8, lineHeight: '1.5' }}>
+              Digital Rights Management testing with support for Widevine, PlayReady, 
+              and FairPlay DRM systems. Tests license acquisition, protected content 
+              playback, and multi-DRM scenarios.
+            </p>
+            <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#ffd700' }}>
+              ✓ Widevine ✓ PlayReady ✓ FairPlay ✓ Multi-DRM ✓ License Servers
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#0a0a0a', 
+      color: '#fff',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      padding: '20px'
+    }}>
+      {/* Navigation Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '30px',
+        padding: '20px',
+        backgroundColor: '#1a1a1a',
+        borderRadius: '10px'
+      }}>
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          margin: 0,
+          background: 'linear-gradient(135deg, #ff0000, #ff6b6b, #6bb6ff, #ffd700)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
         }}>
-          <strong>🔍 Expected Results:</strong>
-          <br />
-          • MP4: Should work on all browsers ✅
-          <br />
-          • HLS: Native on Safari, hls.js on others ✅
-          <br />
-          • DASH: dash.js on all modern browsers ✅
-          <br />
-          • Ads: Pre-roll, mid-roll, and post-roll sequence ✅
+          🧪 Media Player Test Suite
+        </h1>
+        
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => setActiveTestSuite('overview')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: activeTestSuite === 'overview' ? '#ff0000' : '#333',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            🏠 Overview
+          </button>
+          <button
+            onClick={() => setActiveTestSuite('dash-hls')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: activeTestSuite === 'dash-hls' ? '#6bb6ff' : '#333',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            📡 DASH/HLS
+          </button>
+          <button
+            onClick={() => setActiveTestSuite('drm')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: activeTestSuite === 'drm' ? '#ffd700' : '#333',
+              color: activeTestSuite === 'drm' ? '#000' : '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            🔐 DRM
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div>
+        {activeTestSuite === 'overview' && renderOverview()}
+        {activeTestSuite === 'dash-hls' && <DashHlsTest />}
+        {activeTestSuite === 'drm' && <DrmTest />}
+      </div>
+
+      {/* Footer */}
+      <div style={{ 
+        marginTop: '50px', 
+        padding: '20px', 
+        backgroundColor: '#1a1a1a', 
+        borderRadius: '10px',
+        textAlign: 'center'
+      }}>
+        <h3>📋 Testing Guidelines</h3>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '20px',
+          marginTop: '20px',
+          textAlign: 'left'
+        }}>
+          <div>
+            <h4 style={{ color: '#ff6b6b' }}>🎯 Basic Testing</h4>
+            <ul style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.6' }}>
+              <li>Start with Quick Tests for immediate verification</li>
+              <li>Check system capabilities first</li>
+              <li>Test basic MP4 playback before streaming</li>
+              <li>Verify controls and UI responsiveness</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 style={{ color: '#6bb6ff' }}>📡 Streaming Testing</h4>
+            <ul style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.6' }}>
+              <li>Test HLS on Safari and iOS devices</li>
+              <li>Test DASH on Chrome, Firefox, Edge</li>
+              <li>Verify quality switching works</li>
+              <li>Test seeking in adaptive streams</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 style={{ color: '#ffd700' }}>🔐 DRM Testing</h4>
+            <ul style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.6' }}>
+              <li>Ensure HTTPS is enabled</li>
+              <li>Test appropriate DRM for each browser</li>
+              <li>Check license acquisition in console</li>
+              <li>Verify protected content plays correctly</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default DemoApp;
+export default ComprehensiveTestRunner;

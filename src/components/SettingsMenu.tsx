@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { VideoQuality, SubtitleTrack, ChapterTrack, PlayerState } from '../types';
 
 interface SettingsMenuProps {
@@ -27,11 +27,14 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
   const [activeTab, setActiveTab] = useState<'quality' | 'subtitles' | 'speed' | 'chapters'>('speed');
 
   // Determine available tabs
-  const availableTabs = [];
-  if (qualities.length > 0) availableTabs.push('quality');
-  if (subtitles.length > 0) availableTabs.push('subtitles');
-  availableTabs.push('speed'); // Always available
-  if (chapters.length > 0) availableTabs.push('chapters');
+  const availableTabs = useMemo(() => {
+    const tabs = [];
+    if (qualities.length > 0) tabs.push('quality');
+    if (subtitles.length > 0) tabs.push('subtitles');
+    tabs.push('speed'); // Always available
+    if (chapters.length > 0) tabs.push('chapters');
+    return tabs;
+  }, [qualities.length, subtitles.length, chapters.length]);
 
   // Set default tab to first available
   useEffect(() => {

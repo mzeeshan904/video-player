@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface SubtitleCue {
   startTime: number;
@@ -22,7 +22,7 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({ subtitle, currentTime
   const [currentCue, setCurrentCue] = useState<SubtitleCue | null>(null);
 
   // Parse WebVTT content
-  const parseWebVTT = (content: string): SubtitleCue[] => {
+  const parseWebVTT = useCallback((content: string): SubtitleCue[] => {
     const lines = content.split('\n');
     const parsedCues: SubtitleCue[] = [];
     let i = 0;
@@ -60,7 +60,7 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({ subtitle, currentTime
     }
 
     return parsedCues;
-  };
+  }, []);
 
   // Parse timestamp (00:00:00.000 or 00:00.000)
   const parseTimestamp = (timestamp: string): number => {
@@ -104,7 +104,7 @@ const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({ subtitle, currentTime
     };
 
     loadSubtitles();
-  }, [subtitle]);
+  }, [subtitle, parseWebVTT]);
 
   // Find current cue based on video time
   useEffect(() => {
