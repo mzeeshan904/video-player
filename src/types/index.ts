@@ -168,6 +168,8 @@ export interface PlayerConfig {
     enabled: boolean;
     endpoint?: string;
     onEvent?: (event: AnalyticsEvent) => void;
+    userId?: string;
+    enhancedAnalytics?: boolean; // Enable comprehensive analytics tracking
   };
   ui?: {
     theme?: 'dark' | 'light';

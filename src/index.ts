@@ -47,6 +47,8 @@ export { AdManager } from './utils/adManager';
 export { DRMManager } from './utils/drmManager';
 export { StreamingManager } from './utils/streamingManager';
 export { OfflineManager } from './utils/offlineManager';
+export { EnhancedAnalyticsManager, EVENT_NAMES } from './utils/enhancedAnalytics';
+export type { EnhancedAnalyticsEvent } from './utils/enhancedAnalytics';
 
 // Sample configurations for documentation/examples
 export { sampleVideos } from './config/sampleVideos';

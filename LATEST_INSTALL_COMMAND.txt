@@ -1,0 +1,1 @@
+npm install /Users/apple/Desktop/localPlayer/custom-player/advanced-react-media-player-1.1.5.tgz

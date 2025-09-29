@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { PlayerConfig, OfflineVideo, DownloadProgress } from '../types';
 import { usePlayerState } from '../hooks/usePlayerState';
+import { useEnhancedPlayerState } from '../hooks/useEnhancedPlayerState';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
 import { DRMManager } from '../utils/drmManager';
 import { AdManager } from '../utils/adManager';
@@ -29,7 +30,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const offlineManagerRef = useRef<OfflineManager>();
   const isInitializedRef = useRef<boolean>(false);
   const resumeTimeRef = useRef<number>(0);
-  const { state, updateState, trackEvent } = usePlayerState(config.analytics?.onEvent);
+  // Use enhanced analytics if configured, otherwise use standard analytics
+  const useEnhanced = config.analytics?.enhancedAnalytics === true;
+  const standardHook = usePlayerState(useEnhanced ? undefined : config.analytics?.onEvent);
+  const enhancedHook = useEnhancedPlayerState(config, useEnhanced ? config.analytics?.onEvent : undefined);
+  
+  const { state, updateState, trackEvent, enhancedTracking } = useEnhanced ? enhancedHook : { ...standardHook, enhancedTracking: null };
   const { isPiPSupported, isPiPActive, togglePiP } = usePictureInPicture(videoRef);
   
   // Thumbnail preview state
@@ -45,13 +51,37 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const [showDownloadOverlay, setShowDownloadOverlay] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
 
+  // Create enhanced trackEvent function that routes through analytics manager
+  const enhancedTrackEvent = useCallback((type: string, payload?: any) => {
+    if (useEnhanced && enhancedTracking?.getAnalyticsManager()) {
+      // Route through enhanced analytics manager
+      const manager = enhancedTracking.getAnalyticsManager();
+      const enhancedEvent = manager!.logEvent(
+        type.startsWith('on') ? type : `on${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+        payload
+      );
+      
+      // Call the original analytics handler with enhanced event
+      if (config.analytics?.onEvent) {
+        config.analytics.onEvent({
+          type: type as any,
+          timestamp: Date.now(),
+          payload: enhancedEvent
+        });
+      }
+    } else {
+      // Use legacy trackEvent
+      trackEvent(type as any, payload);
+    }
+  }, [useEnhanced, enhancedTracking, trackEvent, config.analytics]);
+
   // Initialize managers only once using useMemo
   useMemo(() => {
     if (!drmManagerRef.current) {
       drmManagerRef.current = new DRMManager();
     }
     if (!adManagerRef.current) {
-      adManagerRef.current = new AdManager(config.ads, trackEvent);
+      adManagerRef.current = new AdManager(config.ads, enhancedTrackEvent);
     }
     if (!offlineManagerRef.current && config.offline) {
       offlineManagerRef.current = new OfflineManager(config.offline);
@@ -66,6 +96,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
       streamingManagerRef.current = new StreamingManager(videoRef.current);
     }
   }, []);
+
+  // Connect video element to enhanced analytics manager
+  useEffect(() => {
+    if (videoRef.current && enhancedTracking?.setVideoElement) {
+      enhancedTracking.setVideoElement(videoRef.current);
+    }
+  }, [enhancedTracking]);
 
   // Check for offline video availability
   useEffect(() => {
@@ -85,7 +122,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           if (blob && videoRef.current) {
             const offlineUrl = URL.createObjectURL(blob);
             videoRef.current.src = offlineUrl;
-            trackEvent('offline_play', { videoId, title: offlineVideo.title });
+            enhancedTrackEvent('offline_play', { videoId, title: offlineVideo.title });
           }
         }
       }
@@ -155,7 +192,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
       } catch (error) {
         updateState({ error: (error as Error).message });
-        trackEvent('error', { error: (error as Error).message });
+        enhancedTrackEvent('error', { error: (error as Error).message });
       }
     };
 
@@ -249,17 +286,17 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
     const handlePlay = () => {
       updateState({ isPlaying: true, buffering: false });
-      trackEvent('play', { currentTime: video.currentTime });
+      enhancedTrackEvent('play', { currentTime: video.currentTime });
     };
 
     const handlePause = () => {
       updateState({ isPlaying: false });
-      trackEvent('pause', { currentTime: video.currentTime });
+      enhancedTrackEvent('pause', { currentTime: video.currentTime });
     };
 
     const handleVolumeChange = () => {
       updateState({ volume: video.volume, muted: video.muted });
-      trackEvent('volumechange', { volume: video.volume, muted: video.muted });
+      enhancedTrackEvent('volumechange', { volume: video.volume, muted: video.muted });
     };
 
     const handleSeeking = () => {
@@ -269,7 +306,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     const handleSeeked = () => {
       const currentTime = video.currentTime;
       updateState({ buffering: false });
-      trackEvent('seek', { currentTime });
+      enhancedTrackEvent('seek', { currentTime });
       
       // Update previous time to current time after seek to prevent false seek detection
       updateState({ previousTime: currentTime });
@@ -277,12 +314,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
     const handleWaiting = () => {
       updateState({ buffering: true });
-      trackEvent('buffering_start');
+      enhancedTrackEvent('buffering_start');
     };
 
     const handleCanPlay = () => {
       updateState({ buffering: false });
-      trackEvent('buffering_end');
+      enhancedTrackEvent('buffering_end');
     };
 
     const handleEnded = async () => {
@@ -351,7 +388,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           });
           // Ensure we resume from the correct time
           video.currentTime = resumeTime;
-          trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_complete_resume' });
+          enhancedTrackEvent('seek', { currentTime: resumeTime, reason: 'midroll_complete_resume' });
           // Subtitles handled by custom overlay
           await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
@@ -373,7 +410,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           } else {
             // All post-roll ads done
             updateState({ isPlaying: false, currentAd: null, showReplay: true });
-            trackEvent('complete', { reason: 'all_ads_finished' });
+            enhancedTrackEvent('complete', { reason: 'all_ads_finished' });
           }
         }
       } else {
@@ -400,7 +437,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         } else {
           // No post-roll ads, video is complete - show replay
           updateState({ isPlaying: false, showReplay: true });
-          trackEvent('complete', { reason: 'main_content_ended' });
+          enhancedTrackEvent('complete', { reason: 'main_content_ended' });
         }
       }
     };
@@ -408,7 +445,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     const handleError = () => {
       const error = video.error?.message || 'Unknown video error';
       updateState({ error, buffering: false });
-      trackEvent('error', { error });
+      enhancedTrackEvent('error', { error });
     };
 
     // Add event listeners
@@ -562,7 +599,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           });
           // Ensure we resume from the correct time
           video.currentTime = resumeTime;
-          trackEvent('seek', { currentTime: resumeTime, reason: 'midroll_skip_resume' });
+          enhancedTrackEvent('seek', { currentTime: resumeTime, reason: 'midroll_skip_resume' });
           // Subtitles handled by custom overlay
           await video.play().catch(error => {});
         } else if (state.playbackPhase === 'postroll') {
@@ -584,11 +621,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           } else {
             // All post-roll ads done
             updateState({ isPlaying: false, currentAd: null, showSkipButton: false, showReplay: true });
-            trackEvent('complete', { reason: 'all_ads_skipped' });
+            enhancedTrackEvent('complete', { reason: 'all_ads_skipped' });
           }
         }
       } catch (error) {
-        trackEvent('error', { error: (error as Error).message });
+        enhancedTrackEvent('error', { error: (error as Error).message });
       }
     }
   }, [state.currentAd, state.playbackPhase, state.mainContentTime, config.src, updateState, trackEvent]);
@@ -651,7 +688,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
       }
     }
 
-    trackEvent('replay', { timestamp: Date.now() });
+    enhancedTrackEvent('replay', { timestamp: Date.now() });
   }, [config.src, updateState, trackEvent]);
 
   const [clickIndicator, setClickIndicator] = useState<{ show: boolean; icon: string }>({ show: false, icon: '' });
@@ -676,24 +713,24 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   // Settings handlers
   const handleSettings = useCallback(() => {
     updateState({ showSettings: !state.showSettings });
-    trackEvent(state.showSettings ? 'settings_close' : 'settings_open', {});
+    enhancedTrackEvent(state.showSettings ? 'settings_close' : 'settings_open', {});
   }, [state.showSettings, updateState, trackEvent]);
 
   const handleQualityChange = useCallback((quality: any) => {
     updateState({ currentQuality: quality });
-    trackEvent('quality_change', { quality });
+    enhancedTrackEvent('quality_change', { quality });
   }, [updateState, trackEvent]);
 
   // Simplified subtitle management - using custom overlay instead of HTML5 tracks
 
   const handleSubtitleChange = useCallback((subtitle: any) => {
     updateState({ currentSubtitle: subtitle });
-    trackEvent('subtitle_change', { subtitle });
+    enhancedTrackEvent('subtitle_change', { subtitle });
   }, [updateState, trackEvent]);
 
   const handleSpeedChange = useCallback((speed: number) => {
     updateState({ playbackSpeed: speed });
-    trackEvent('speed_change', { speed });
+    enhancedTrackEvent('speed_change', { speed });
     
     const video = videoRef.current;
     if (video) {
@@ -709,11 +746,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
   const handleDownloadStart = useCallback(() => {
     const videoId = btoa(config.src.url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-    trackEvent('download_start', { videoId, url: config.src.url });
+    enhancedTrackEvent('download_start', { videoId, url: config.src.url });
   }, [config.src.url, trackEvent]);
 
   const handleDownloadComplete = useCallback((offlineVideo: OfflineVideo) => {
-    trackEvent('download_complete', { 
+    enhancedTrackEvent('download_complete', { 
       videoId: offlineVideo.id, 
       size: offlineVideo.size,
       title: offlineVideo.title 
@@ -723,7 +760,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   }, [trackEvent]);
 
   const handleDownloadError = useCallback((error: Error) => {
-    trackEvent('download_failed', { error: error.message });
+    enhancedTrackEvent('download_failed', { error: error.message });
     setDownloadProgress(null);
     console.error('Download failed:', error);
   }, [trackEvent]);
@@ -766,7 +803,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   useEffect(() => {
     const handleFullscreenChange = () => {
       updateState({ fullscreen: !!document.fullscreenElement });
-      trackEvent('fullscreen', { fullscreen: !!document.fullscreenElement });
+      enhancedTrackEvent('fullscreen', { fullscreen: !!document.fullscreenElement });
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);

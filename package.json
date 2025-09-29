@@ -1,6 +1,6 @@
 {
   "name": "advanced-react-media-player",
-  "version": "1.0.0",
+  "version": "1.1.5",
   "description": "🎬 Professional React Media Player with Ads, DRM, Analytics & Interactive Features - Production Ready",
   "private": false,
   "main": "dist/index.js",
@@ -10,7 +10,10 @@
     "dist",
     "README.md",
     "USAGE_EXAMPLE.md",
-    "COMPLETE_ADS_EXAMPLE.md"
+    "COMPLETE_ADS_EXAMPLE.md",
+    "ENHANCED_ANALYTICS_GUIDE.md",
+    "ANALYTICS_MIGRATION_GUIDE.md",
+    "ENHANCED_ANALYTICS_EXAMPLE.tsx"
   ],
   "keywords": [
     "react",
@@ -24,6 +27,9 @@
     "dash",
     "interactive-ads",
     "analytics",
+    "enhanced-analytics",
+    "engagement-metrics",
+    "performance-monitoring",
     "typescript",
     "streaming",
     "widevine",
@@ -67,10 +73,18 @@
     "build:lib": "rollup -c",
     "build:types": "tsc -p tsconfig.build.json",
     "build:demo": "react-scripts build",
+    "build:test": "npm run build && npm run pack:test",
+    "pack:test": "npm pack",
     "test": "react-scripts test",
+    "test:package": "./test-package.sh",
+    "test:enhanced-analytics": "npm run build && node scripts/test-enhanced-analytics.js",
     "eject": "react-scripts eject",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run test && npm run build"
+    "prepublishOnly": "npm run build",
+    "version:patch": "npm version patch && npm run build && npm run pack:test",
+    "version:minor": "npm version minor && npm run build && npm run pack:test",
+    "auto-package": "./auto-build-and-package.sh",
+    "quick-build": "npm run build && npm pack && echo 'Install with: npm install ./advanced-react-media-player-$(node -p \"require(\"./package.json\").version\").tgz'"
   },
   "eslintConfig": {
     "extends": [
