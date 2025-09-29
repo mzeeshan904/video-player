@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
-import { PlayerConfig } from '../types';
+import { PlayerConfig, OfflineVideo, DownloadProgress } from '../types';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
 import { DRMManager } from '../utils/drmManager';
 import { AdManager } from '../utils/adManager';
 import { StreamingManager } from '../utils/streamingManager';
+import { OfflineManager } from '../utils/offlineManager';
 import PlayerControls from './PlayerControls';
 import AdOverlay from './AdOverlay';
 import InteractiveAdOverlay from './InteractiveAdOverlay';
@@ -12,6 +13,7 @@ import ReplayOverlay from './ReplayOverlay';
 import SettingsMenu from './SettingsMenu';
 import SubtitleOverlay from './SubtitleOverlay';
 import ThumbnailPreview from './ThumbnailPreview';
+import DownloadControls from './DownloadControls';
 import './MediaPlayer.css';
 
 interface MediaPlayerProps {
@@ -24,6 +26,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const drmManagerRef = useRef<DRMManager>();
   const adManagerRef = useRef<AdManager>();
   const streamingManagerRef = useRef<StreamingManager>();
+  const offlineManagerRef = useRef<OfflineManager>();
   const isInitializedRef = useRef<boolean>(false);
   const resumeTimeRef = useRef<number>(0);
   const { state, updateState, trackEvent } = usePlayerState(config.analytics?.onEvent);
@@ -37,6 +40,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     seekBarWidth: 0
   });
 
+  // Offline state management
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [showDownloadOverlay, setShowDownloadOverlay] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
+
   // Initialize managers only once using useMemo
   useMemo(() => {
     if (!drmManagerRef.current) {
@@ -44,6 +52,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     }
     if (!adManagerRef.current) {
       adManagerRef.current = new AdManager(config.ads, trackEvent);
+    }
+    if (!offlineManagerRef.current && config.offline) {
+      offlineManagerRef.current = new OfflineManager(config.offline);
     }
     return true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,10 +67,37 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     }
   }, []);
 
+  // Check for offline video availability
+  useEffect(() => {
+    const checkOfflineAvailability = async () => {
+      if (!offlineManagerRef.current) return;
+      
+      // Generate video ID from URL for consistency
+      const videoId = btoa(config.src.url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+      const isAvailable = await offlineManagerRef.current.isVideoAvailableOffline(videoId);
+      
+      if (isAvailable) {
+        const offlineVideo = await offlineManagerRef.current.getOfflineVideo(videoId);
+        if (offlineVideo) {
+          setIsOfflineMode(true);
+          // Load offline video
+          const blob = await offlineManagerRef.current.getOfflineVideoBlob(videoId);
+          if (blob && videoRef.current) {
+            const offlineUrl = URL.createObjectURL(blob);
+            videoRef.current.src = offlineUrl;
+            trackEvent('offline_play', { videoId, title: offlineVideo.title });
+          }
+        }
+      }
+    };
+
+    checkOfflineAvailability();
+  }, [config.src.url, trackEvent]);
+
   // Setup video element and load source
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || isOfflineMode) return; // Skip online setup if in offline mode
 
     const setupVideo = async () => {
       try {
@@ -663,6 +701,33 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     }
   }, [updateState, trackEvent]);
 
+  // Handle download functionality
+  const handleDownload = useCallback(() => {
+    if (!config.offline?.downloadEnabled || isOfflineMode) return;
+    setShowDownloadOverlay(true);
+  }, [config.offline?.downloadEnabled, isOfflineMode]);
+
+  const handleDownloadStart = useCallback(() => {
+    const videoId = btoa(config.src.url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    trackEvent('download_start', { videoId, url: config.src.url });
+  }, [config.src.url, trackEvent]);
+
+  const handleDownloadComplete = useCallback((offlineVideo: OfflineVideo) => {
+    trackEvent('download_complete', { 
+      videoId: offlineVideo.id, 
+      size: offlineVideo.size,
+      title: offlineVideo.title 
+    });
+    setDownloadProgress(null);
+    setShowDownloadOverlay(false);
+  }, [trackEvent]);
+
+  const handleDownloadError = useCallback((error: Error) => {
+    trackEvent('download_failed', { error: error.message });
+    setDownloadProgress(null);
+    console.error('Download failed:', error);
+  }, [trackEvent]);
+
   // Handle thumbnail hover (optimized to prevent unnecessary updates)
   const handleThumbnailHover = useCallback((hoveredTime: number, relativeX: number, seekBarWidth: number, isVisible: boolean) => {
     setThumbnailState({
@@ -792,9 +857,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           onFullscreen={handleFullscreen}
           onPictureInPicture={togglePiP}
           onSettings={handleSettings}
+          onDownload={handleDownload}
           isPiPSupported={isPiPSupported}
           isPiPActive={isPiPActive}
           isAd={!!state.currentAd}
+          showDownload={config.ui?.showDownload && config.offline?.downloadEnabled}
           chapters={config.src.chapters}
           onThumbnailHover={handleThumbnailHover}
         />
@@ -810,6 +877,32 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           onSpeedChange={handleSpeedChange}
           onClose={handleSettings}
         />
+      )}
+
+      {/* Download Overlay */}
+      {showDownloadOverlay && config.offline && (
+        <div className="download-overlay">
+          <div className="download-modal">
+            <DownloadControls
+              videoId={btoa(config.src.url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16)}
+              videoTitle={config.src.url.split('/').pop() || 'Video'}
+              videoUrl={config.src.url}
+              mimeType={config.src.mimeType || 'video/mp4'}
+              quality={state.currentQuality || undefined}
+              subtitles={config.src.subtitles}
+              offlineConfig={config.offline}
+              onDownloadStart={handleDownloadStart}
+              onDownloadComplete={handleDownloadComplete}
+              onDownloadError={handleDownloadError}
+            />
+            <button 
+              className="download-close"
+              onClick={() => setShowDownloadOverlay(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Thumbnail Preview */}

@@ -5,6 +5,7 @@ import './components/MediaPlayer.css';
 export { default as MediaPlayer } from './components/MediaPlayer';
 export { default as SettingsMenu } from './components/SettingsMenu';
 export { default as ThumbnailPreview } from './components/ThumbnailPreview';
+export { default as DownloadControls } from './components/DownloadControls';
 
 // Type exports (both as types and interfaces)
 export type {
@@ -24,6 +25,11 @@ export type {
   SubtitleTrack,
   ChapterTrack,
   PlayerSettings,
+  OfflineConfig,
+  OfflineVideo,
+  OfflineSubtitle,
+  DownloadProgress,
+  OfflineStorage,
 } from './types';
 
 // Also export types as regular exports for runtime access
@@ -40,6 +46,7 @@ export { usePictureInPicture } from './hooks/usePictureInPicture';
 export { AdManager } from './utils/adManager';
 export { DRMManager } from './utils/drmManager';
 export { StreamingManager } from './utils/streamingManager';
+export { OfflineManager } from './utils/offlineManager';
 
 // Sample configurations for documentation/examples
 export { sampleVideos } from './config/sampleVideos';

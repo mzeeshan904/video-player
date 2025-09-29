@@ -73,7 +73,9 @@ export interface AnalyticsEvent {
   type: 'play' | 'pause' | 'seek' | 'volumechange' | 'fullscreen' | 'error' | 
         'ad_start' | 'ad_complete' | 'ad_skip' | 'ad_click' | 'ad_interaction' |
         'buffering_start' | 'buffering_end' | 'complete' | 'replay' |
-        'quality_change' | 'subtitle_change' | 'speed_change' | 'settings_open' | 'settings_close';
+        'quality_change' | 'subtitle_change' | 'speed_change' | 'settings_open' | 'settings_close' |
+        'download_start' | 'download_progress' | 'download_complete' | 'download_failed' | 'download_cancelled' |
+        'offline_play' | 'offline_delete';
   timestamp: number;
   payload?: any;
 }
@@ -111,6 +113,54 @@ export interface PlayerSettings {
   pictureInPicture?: boolean;
 }
 
+// Offline Support Types
+export interface OfflineConfig {
+  downloadEnabled: boolean;
+  maxDownloads?: number;
+  expiryDays?: number;
+  maxFileSize?: number; // in MB
+  allowMeteredConnection?: boolean;
+  storageQuota?: number; // in MB
+}
+
+export interface OfflineVideo {
+  id: string;
+  title: string;
+  url: string;
+  originalUrl: string;
+  mimeType: string;
+  size: number; // in bytes
+  downloadedAt: number; // timestamp
+  expiresAt?: number; // timestamp
+  thumbnailUrl?: string;
+  duration?: number;
+  quality?: VideoQuality;
+  subtitles?: OfflineSubtitle[];
+}
+
+export interface OfflineSubtitle {
+  id: string;
+  label: string;
+  language: string;
+  data: string; // VTT content stored as string
+}
+
+export interface DownloadProgress {
+  videoId: string;
+  loaded: number;
+  total: number;
+  percentage: number;
+  speed?: number; // bytes per second
+  timeRemaining?: number; // seconds
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+}
+
+export interface OfflineStorage {
+  videos: OfflineVideo[];
+  totalSize: number;
+  lastCleanup: number;
+}
+
 export interface PlayerConfig {
   src: MediaSource;
   ads?: AdConfig;
@@ -126,8 +176,10 @@ export interface PlayerConfig {
     loop?: boolean;
     showControls?: boolean;
     showSettings?: boolean;
+    showDownload?: boolean;
   };
   settings?: PlayerSettings;
+  offline?: OfflineConfig;
 }
 
 // Player State Types

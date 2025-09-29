@@ -10,9 +10,11 @@ interface PlayerControlsProps {
   onFullscreen: () => void;
   onPictureInPicture?: () => void;
   onSettings: () => void;
+  onDownload?: () => void;
   isPiPSupported?: boolean;
   isPiPActive?: boolean;
   isAd: boolean;
+  showDownload?: boolean;
   chapters?: ChapterTrack[];
   onThumbnailHover?: (hoveredTime: number, relativeX: number, seekBarWidth: number, isVisible: boolean) => void;
 }
@@ -26,9 +28,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onFullscreen,
   onPictureInPicture,
   onSettings,
+  onDownload,
   isPiPSupported = false,
   isPiPActive = false,
   isAd,
+  showDownload = false,
   chapters,
   onThumbnailHover,
 }) => {
@@ -285,6 +289,20 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
               </svg>
             )}
           </button>
+
+          {/* Download Button */}
+          {showDownload && onDownload && !isAd && (
+            <button 
+              className="control-button download"
+              onClick={onDownload}
+              aria-label="Download"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M12 15.575c-.2 0-.375-.063-.525-.188L6.7 10.6c-.383-.383-.388-.962-.013-1.337.375-.375.954-.375 1.329 0l3.984 3.984 3.984-3.984c.375-.375.954-.375 1.329 0 .375.375.375.954 0 1.329l-4.775 4.788c-.15.15-.325.225-.538.195Z"/>
+                <path d="M12 21c-.275 0-.5-.225-.5-.5v-11c0-.275.225-.5.5-.5s.5.225.5.5v11c0 .275-.225.5-.5.5Z"/>
+              </svg>
+            </button>
+          )}
 
           <button 
             className="control-button settings"
