@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
-import { PlayerConfig, OfflineVideo, DownloadProgress } from '../types';
+import { PlayerConfig, OfflineVideo, DownloadProgress, EventHooks } from '../types';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { useEnhancedPlayerState } from '../hooks/useEnhancedPlayerState';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
@@ -51,29 +51,45 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   const [showDownloadOverlay, setShowDownloadOverlay] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
 
+  // Helper function to safely call event hooks
+  const callEventHook = useCallback((hookName: keyof EventHooks, ...args: any[]) => {
+    if (config.events && config.events[hookName]) {
+      try {
+        config.events[hookName]!(...args);
+      } catch (error) {
+        console.error(`Event hook ${hookName} failed:`, error);
+      }
+    }
+  }, [config.events]);
+
+  // Helper function to update analytics manager context
+  const updateAnalyticsContext = useCallback((type: 'ad' | 'content', data?: any) => {
+    if (enhancedTracking?.getAnalyticsManager()) {
+      const manager = enhancedTracking.getAnalyticsManager();
+      if (type === 'ad' && data?.id) {
+        manager!.setCurrentAd(data.id);
+      } else if (type === 'content') {
+        manager!.setCurrentContent();
+      }
+    }
+  }, [enhancedTracking]);
+
   // Create enhanced trackEvent function that routes through analytics manager
   const enhancedTrackEvent = useCallback((type: string, payload?: any) => {
     if (useEnhanced && enhancedTracking?.getAnalyticsManager()) {
       // Route through enhanced analytics manager
+      // The EnhancedAnalyticsManager.logEvent() already calls config.analytics.onEvent
+      // via sendToAnalytics(), so we don't call it again here to avoid duplicates
       const manager = enhancedTracking.getAnalyticsManager();
-      const enhancedEvent = manager!.logEvent(
+      manager!.logEvent(
         type.startsWith('on') ? type : `on${type.charAt(0).toUpperCase()}${type.slice(1)}`,
         payload
       );
-      
-      // Call the original analytics handler with enhanced event
-      if (config.analytics?.onEvent) {
-        config.analytics.onEvent({
-          type: type as any,
-          timestamp: Date.now(),
-          payload: enhancedEvent
-        });
-      }
     } else {
       // Use legacy trackEvent
       trackEvent(type as any, payload);
     }
-  }, [useEnhanced, enhancedTracking, trackEvent, config.analytics]);
+  }, [useEnhanced, enhancedTracking, trackEvent]);
 
   // Initialize managers only once using useMemo
   useMemo(() => {
@@ -173,12 +189,18 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           const preRollAd = adManagerRef.current?.getPreRollAd();
           if (preRollAd) {
             updateState({ currentAd: preRollAd, adProgress: 0 });
+            
+            // Update analytics context and call event hook
+            updateAnalyticsContext('ad', preRollAd);
+            callEventHook('onAdStarted', preRollAd);
+            
             video.src = preRollAd.url;
             video.load();
             video.play().catch(() => {}); // Auto-play may be blocked
           } else {
             // No pre-roll ads, start main content
             updateState({ playbackPhase: 'content' });
+            updateAnalyticsContext('content');
             if (streamingManagerRef.current) {
               streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
             } else {
@@ -287,11 +309,25 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
     const handlePlay = () => {
       updateState({ isPlaying: true, buffering: false });
       enhancedTrackEvent('play', { currentTime: video.currentTime });
+      
+      // Call event hook
+      callEventHook('onPlayStarted', { 
+        url: config.src.url, 
+        currentTime: video.currentTime,
+        isAd: !!state.currentAd 
+      });
     };
 
     const handlePause = () => {
       updateState({ isPlaying: false });
       enhancedTrackEvent('pause', { currentTime: video.currentTime });
+      
+      // Call event hook
+      callEventHook('onPause', { 
+        url: config.src.url, 
+        currentTime: video.currentTime,
+        isAd: !!state.currentAd 
+      });
     };
 
     const handleVolumeChange = () => {
@@ -327,11 +363,20 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         // Ad ended
         adManagerRef.current?.onAdComplete(state.currentAd.id);
         
+        // Call event hooks for ad completion
+        callEventHook('onAdCompleted', state.currentAd);
+        callEventHook('onItemCompleted', state.currentAd);
+        
         if (state.playbackPhase === 'preroll') {
           // Check for more pre-roll ads
           const nextPreRollAd = adManagerRef.current?.getPreRollAd();
           if (nextPreRollAd) {
             updateState({ currentAd: nextPreRollAd, showSkipButton: false, adProgress: 0 });
+            
+            // Update analytics context and call event hook for new ad started
+            updateAnalyticsContext('ad', nextPreRollAd);
+            callEventHook('onAdStarted', nextPreRollAd);
+            
             video.src = nextPreRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -350,6 +395,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               showSkipButton: false, 
               playbackPhase: 'content' 
             });
+            updateAnalyticsContext('content');
             if (streamingManagerRef.current) {
               streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
             } else {
@@ -396,6 +442,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           const nextPostRollAd = adManagerRef.current?.getPostRollAd();
           if (nextPostRollAd) {
             updateState({ currentAd: nextPostRollAd, showSkipButton: false, adProgress: 0 });
+            
+            // Call event hook for new ad started
+            callEventHook('onAdStarted', nextPostRollAd);
+            
             video.src = nextPostRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -423,6 +473,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
             playbackPhase: 'postroll',
             adProgress: 0
           });
+          
+          // Update analytics context and call event hook for new ad started
+          updateAnalyticsContext('ad', postRollAd);
+          callEventHook('onAdStarted', postRollAd);
+          
           video.src = postRollAd.url;
           video.load();
           // Wait for load to complete before playing
@@ -438,6 +493,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           // No post-roll ads, video is complete - show replay
           updateState({ isPlaying: false, showReplay: true });
           enhancedTrackEvent('complete', { reason: 'main_content_ended' });
+          
+          // Call event hook for main content completion
+          callEventHook('onItemCompleted', { 
+            id: 'main_content',
+            url: config.src.url,
+            type: 'content'
+          });
         }
       }
     };
@@ -446,6 +508,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
       const error = video.error?.message || 'Unknown video error';
       updateState({ error, buffering: false });
       enhancedTrackEvent('error', { error });
+      
+      // Call event hook
+      callEventHook('onError', { 
+        error,
+        url: config.src.url,
+        isAd: !!state.currentAd 
+      });
     };
 
     // Add event listeners
@@ -530,6 +599,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
 
     adManagerRef.current?.onAdSkip(state.currentAd.id);
     
+    // Call event hook
+    callEventHook('onSkip', state.currentAd);
+    
     const video = videoRef.current;
     if (video) {
       // Ensure pause completes before proceeding
@@ -543,6 +615,11 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           const nextPreRollAd = adManagerRef.current?.getPreRollAd();
           if (nextPreRollAd) {
             updateState({ currentAd: nextPreRollAd, showSkipButton: false, adProgress: 0 });
+            
+            // Update analytics context and call event hook for new ad started
+            updateAnalyticsContext('ad', nextPreRollAd);
+            callEventHook('onAdStarted', nextPreRollAd);
+            
             video.src = nextPreRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -561,6 +638,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
               showSkipButton: false, 
               playbackPhase: 'content' 
             });
+            updateAnalyticsContext('content');
             if (streamingManagerRef.current) {
               streamingManagerRef.current.loadSource(config.src.url, config.src.mimeType);
             } else {
@@ -607,6 +685,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
           const nextPostRollAd = adManagerRef.current?.getPostRollAd();
           if (nextPostRollAd) {
             updateState({ currentAd: nextPostRollAd, showSkipButton: false, adProgress: 0 });
+            
+            // Call event hook for new ad started
+            callEventHook('onAdStarted', nextPostRollAd);
+            
             video.src = nextPostRollAd.url;
             video.load();
             // Wait for load to complete before playing
@@ -628,7 +710,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
         enhancedTrackEvent('error', { error: (error as Error).message });
       }
     }
-  }, [state.currentAd, state.playbackPhase, state.mainContentTime, config.src, updateState, trackEvent]);
+  }, [state.currentAd, state.playbackPhase, state.mainContentTime, config.src, updateState, trackEvent, callEventHook, updateAnalyticsContext]);
 
   const handleAdClick = useCallback((url?: string) => {
     if (!state.currentAd) return;
@@ -717,16 +799,23 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ config }) => {
   }, [state.showSettings, updateState, trackEvent]);
 
   const handleQualityChange = useCallback((quality: any) => {
+    const oldQuality = state.currentQuality;
     updateState({ currentQuality: quality });
     enhancedTrackEvent('quality_change', { quality });
-  }, [updateState, trackEvent]);
+    
+    // Call event hook
+    callEventHook('onQualityChange', oldQuality, quality);
+  }, [updateState, trackEvent, state.currentQuality, callEventHook]);
 
   // Simplified subtitle management - using custom overlay instead of HTML5 tracks
 
   const handleSubtitleChange = useCallback((subtitle: any) => {
     updateState({ currentSubtitle: subtitle });
     enhancedTrackEvent('subtitle_change', { subtitle });
-  }, [updateState, trackEvent]);
+    
+    // Call event hook
+    callEventHook('onSubtitleChange', subtitle);
+  }, [updateState, trackEvent, callEventHook]);
 
   const handleSpeedChange = useCallback((speed: number) => {
     updateState({ playbackSpeed: speed });

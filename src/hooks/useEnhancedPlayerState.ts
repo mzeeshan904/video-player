@@ -69,25 +69,62 @@ export const useEnhancedPlayerState = (
     }
   }, [config]);
 
-  // 🚫 Automatic state change tracking disabled to prevent duplicates
-  // All events are now tracked manually via enhancedTrackEvent in MediaPlayer
+  // ✅ Re-enabled automatic state change tracking for core events
+  // This ensures analytics work even without manual MediaPlayer calls
   useEffect(() => {
     const prevState = previousStateRef.current;
     const manager = analyticsManagerRef.current;
     
     if (!manager) return;
 
-    // Only track state changes that don't have manual equivalents
-    
-    // Track errors (no manual equivalent)
-    if (state.error && state.error !== prevState.error) {
-      manager.trackError(state.error);
+    // Track core playback state changes
+    if (state.isPlaying !== prevState.isPlaying) {
+      if (state.isPlaying) {
+        manager.logEvent('onPlay', { currentTime: state.currentTime });
+      } else if (!state.isPlaying && prevState.isPlaying) {
+        manager.logEvent('onPause', { currentTime: state.currentTime });
+      }
     }
 
-    // Track completion (automatic detection)
+    // Track seeking
+    if (Math.abs(state.currentTime - prevState.currentTime) > 1 && 
+        !state.isPlaying && !prevState.isPlaying) {
+      manager.logEvent('onSeek', { currentTime: state.currentTime });
+    }
+
+    // Track buffering
+    if (state.isBuffering !== prevState.isBuffering) {
+      if (state.isBuffering) {
+        manager.logEvent('onBuffering_start');
+      } else {
+        manager.logEvent('onBuffering_end');
+      }
+    }
+
+    // Track volume changes
+    if (state.volume !== prevState.volume) {
+      manager.logEvent('onVolume_change', { volume: state.volume });
+    }
+
+    // Track quality changes
+    if (state.currentQuality !== prevState.currentQuality) {
+      manager.logEvent('onQuality_change', { quality: state.currentQuality });
+    }
+
+    // Track fullscreen changes
+    if (state.isFullscreen !== prevState.isFullscreen) {
+      manager.logEvent(state.isFullscreen ? 'onFullscreen_enter' : 'onFullscreen_exit');
+    }
+
+    // Track errors
+    if (state.error && state.error !== prevState.error) {
+      manager.logEvent('onError', { error: state.error });
+    }
+
+    // Track completion
     if (state.currentTime >= state.duration && state.duration > 0 && 
         prevState.currentTime < prevState.duration) {
-      manager.trackComplete();
+      manager.logEvent('onComplete');
     }
 
     previousStateRef.current = state;
@@ -100,20 +137,12 @@ export const useEnhancedPlayerState = (
   const trackEvent = useCallback((type: AnalyticsEvent['type'], payload?: any) => {
     if (analyticsManagerRef.current) {
       // Use enhanced analytics manager to generate comprehensive events
-      const enhancedEvent = analyticsManagerRef.current.logEvent(
+      // The EnhancedAnalyticsManager.logEvent() already calls config.analytics.onEvent
+      // so we don't need to call onAnalyticsEvent again here to avoid duplicates
+      analyticsManagerRef.current.logEvent(
         mapLegacyTypeToEnhancedEventName(type),
         payload
       );
-      
-      // Call external analytics handler with enhanced event structure
-      if (onAnalyticsEvent) {
-        const legacyEvent: AnalyticsEvent = {
-          type,
-          timestamp: Date.now(),
-          payload: enhancedEvent,
-        };
-        onAnalyticsEvent(legacyEvent);
-      }
     } else {
       // Fallback to legacy event if enhanced analytics not available
       const event: AnalyticsEvent = {

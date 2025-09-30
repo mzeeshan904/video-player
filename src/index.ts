@@ -30,6 +30,7 @@ export type {
   OfflineSubtitle,
   DownloadProgress,
   OfflineStorage,
+  EventHooks,
 } from './types';
 
 // Also export types as regular exports for runtime access

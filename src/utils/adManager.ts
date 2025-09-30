@@ -135,9 +135,12 @@ export class AdManager {
   }
 
   private trackEvent(type: AnalyticsEvent['type'], payload?: any): void {
-    if (this.onAnalyticsEvent) {
-      this.onAnalyticsEvent(type, payload);
-    }
+    // AdManager events are now handled by MediaPlayer's enhancedTrackEvent
+    // to avoid duplicate analytics calls. This method is kept for compatibility
+    // but doesn't call onAnalyticsEvent to prevent duplicates.
+    
+    // Note: Analytics tracking is now handled in MediaPlayer.tsx via enhancedTrackEvent
+    // when ad events occur (handleAdStart, handleAdComplete, etc.)
   }
 
   public reset(): void {

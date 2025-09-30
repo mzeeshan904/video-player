@@ -161,6 +161,28 @@ export interface OfflineStorage {
   lastCleanup: number;
 }
 
+// Dynamic Event Hooks for Player Configuration
+export interface EventHooks {
+  // When skip button is clicked
+  onSkip?: (item: any) => void;
+  // When any item (video or ad) completes
+  onItemCompleted?: (item: any) => void;
+  // When an ad starts
+  onAdStarted?: (ad: any) => void;
+  // When an ad finishes
+  onAdCompleted?: (ad: any) => void;
+  // When playback starts
+  onPlayStarted?: (src: any) => void;
+  // When playback is paused
+  onPause?: (src: any) => void;
+  // When error occurs
+  onError?: (error: any) => void;
+  // When quality changes
+  onQualityChange?: (oldQuality: any, newQuality: any) => void;
+  // When subtitle changes
+  onSubtitleChange?: (subtitle: any) => void;
+}
+
 export interface PlayerConfig {
   src: MediaSource;
   ads?: AdConfig;
@@ -182,6 +204,7 @@ export interface PlayerConfig {
   };
   settings?: PlayerSettings;
   offline?: OfflineConfig;
+  events?: EventHooks; // Optional dynamic event hooks
 }
 
 // Player State Types
