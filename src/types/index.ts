@@ -221,7 +221,7 @@ export interface PlayerState {
   adProgress: number;
   showSkipButton: boolean;
   interactiveAdActive: boolean;
-  playbackPhase: 'preroll' | 'content' | 'postroll';
+  playbackPhase: 'preroll' | 'content' | 'midroll' | 'postroll';
   mainContentTime: number; // Track main content time separately
   previousTime: number; // Track previous time to detect seeks
   showReplay: boolean; // Show replay overlay when all content is complete

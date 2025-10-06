@@ -8,6 +8,12 @@ export class AdManager {
   private currentPostRollIndex = 0;
   private playedMidRollAds = new Set<string>();
   private onAnalyticsEvent?: (type: AnalyticsEvent['type'], payload?: any) => void;
+  
+  // PHASE 2: Mid-roll queue for chained ads at the same playAt time
+  // Key is floored playAt time (e.g., 25.1s and 25.3s both map to 25)
+  // Value is array of ads at that cue point, in order
+  private midRollQueue: Map<number, MidRollAd[]> = new Map();
+  private playedCues = new Set<number>(); // Track which cues have been played
 
   constructor(config?: AdConfig, onAnalyticsEvent?: (type: AnalyticsEvent['type'], payload?: any) => void) {
     if (config) {
@@ -18,6 +24,41 @@ export class AdManager {
     this.onAnalyticsEvent = onAnalyticsEvent;
     // Always reset indices when creating new instance
     this.reset();
+    // Build mid-roll queue (group ads by playAt time)
+    this.buildMidRollQueue();
+  }
+  
+  /**
+   * PHASE 2: Build mid-roll queue
+   * Groups ads by playAt time (floored to nearest second) and sorts them
+   * Example: [ad1@25.1s, ad2@25.3s] → queue.get(25) = [ad1, ad2]
+   */
+  private buildMidRollQueue(): void {
+    // C1: Stable ordering & coalescing - sort by playAt, then by original index
+    const sortedAds = [...this.midRollAds].sort((a, b) => {
+      if (Math.abs(a.playAt - b.playAt) <= 0.25) {
+        // Within epsilon - treat as same cue, maintain original order
+        return this.midRollAds.indexOf(a) - this.midRollAds.indexOf(b);
+      }
+      return a.playAt - b.playAt;
+    });
+    
+    // Group ads by floored playAt time
+    for (const ad of sortedAds) {
+      const cuePoint = Math.floor(ad.playAt);
+      const queue = this.midRollQueue.get(cuePoint) || [];
+      queue.push(ad);
+      this.midRollQueue.set(cuePoint, queue);
+    }
+    
+    // Log queue structure for debugging
+    if (this.midRollQueue.size > 0) {
+      console.log('🔗 Mid-roll queue built:', 
+        Array.from(this.midRollQueue.entries()).map(([cue, ads]) => 
+          `cue@${cue}s: [${ads.map(a => a.id).join(', ')}]`
+        ).join(', ')
+      );
+    }
   }
 
   public getPreRollAd(): Ad | null {
@@ -34,32 +75,122 @@ export class AdManager {
     return this.currentPreRollIndex < this.preRollAds.length;
   }
 
-  public getMidRollAd(currentTime: number): MidRollAd | null {
-    for (const ad of this.midRollAds) {
+  /**
+   * PHASE 3: Get mid-roll ad with chain information
+   * Returns the first ad from a cue queue and metadata about the chain
+   */
+  public getMidRollAd(currentTime: number): { ad: MidRollAd; chainInfo: { isChained: boolean; chainLength: number; chainIndex: number; cuePoint: number } } | null {
+    // Check each cue point in the queue
+    for (const [cuePoint, adsAtCue] of Array.from(this.midRollQueue.entries())) {
       if (
-        currentTime >= ad.playAt &&
-        currentTime <= ad.playAt + 1 && // 1 second tolerance
-        !this.playedMidRollAds.has(ad.id)
+        currentTime >= cuePoint &&
+        currentTime <= cuePoint + 1 && // 1 second tolerance
+        !this.playedCues.has(cuePoint) // Check if this cue has been triggered
       ) {
-        this.playedMidRollAds.add(ad.id);
-        this.trackEvent('ad_start', { adId: ad.id, adType: 'midroll', playAt: ad.playAt });
-        return ad;
+        // Mark this cue as played
+        this.playedCues.add(cuePoint);
+        
+        // Return the first ad in the queue with chain metadata
+        const firstAd = adsAtCue[0];
+        const chainInfo = {
+          isChained: adsAtCue.length > 1,
+          chainLength: adsAtCue.length,
+          chainIndex: 0, // This is the first ad in the chain
+          cuePoint
+        };
+        
+        this.playedMidRollAds.add(firstAd.id);
+        this.trackEvent('ad_start', { 
+          adId: firstAd.id, 
+          adType: 'midroll', 
+          playAt: firstAd.playAt,
+          chainInfo 
+        });
+        
+        if (chainInfo.isChained) {
+          console.log(`🔗 Ad chain started at cue ${cuePoint}s with ${chainInfo.chainLength} ads: [${adsAtCue.map(a => a.id).join(', ')}]`);
+        }
+        
+        return { ad: firstAd, chainInfo };
       }
     }
     return null;
   }
+  
+  /**
+   * PHASE 4: Get next ad in the current chain
+   * Called after an ad completes/skips to check if there are more ads at this cue
+   */
+  public getNextAdInChain(cuePoint: number, currentChainIndex: number): { ad: MidRollAd; chainInfo: { isChained: boolean; chainLength: number; chainIndex: number; cuePoint: number } } | null {
+    const adsAtCue = this.midRollQueue.get(cuePoint);
+    if (!adsAtCue) return null;
+    
+    const nextIndex = currentChainIndex + 1;
+    if (nextIndex >= adsAtCue.length) {
+      // No more ads in this chain
+      console.log(`✅ Ad chain completed at cue ${cuePoint}s (played ${adsAtCue.length} ads)`);
+      return null;
+    }
+    
+    const nextAd = adsAtCue[nextIndex];
+    const chainInfo = {
+      isChained: nextIndex < adsAtCue.length - 1, // More ads after this one?
+      chainLength: adsAtCue.length,
+      chainIndex: nextIndex,
+      cuePoint
+    };
+    
+    this.playedMidRollAds.add(nextAd.id);
+    this.trackEvent('ad_start', { 
+      adId: nextAd.id, 
+      adType: 'midroll', 
+      playAt: nextAd.playAt,
+      chainInfo,
+      isChainContinuation: true
+    });
+    
+    console.log(`🔗 Ad chain continuing: ${nextIndex + 1}/${adsAtCue.length} at cue ${cuePoint}s (${nextAd.id})`);
+    
+    return { ad: nextAd, chainInfo };
+  }
 
-  public checkMissedMidRollAds(seekFromTime: number, seekToTime: number): MidRollAd | null {
-    // Find any mid-roll ads that were skipped during seek
-    for (const ad of this.midRollAds) {
+  /**
+   * Check for missed mid-roll ads during seek (queue-aware version)
+   * Returns the first ad from the first missed cue
+   */
+  public checkMissedMidRollAds(seekFromTime: number, seekToTime: number): { ad: MidRollAd; chainInfo: { isChained: boolean; chainLength: number; chainIndex: number; cuePoint: number } } | null {
+    // Find the first cue that was skipped during seek
+    for (const [cuePoint, adsAtCue] of Array.from(this.midRollQueue.entries())) {
       if (
-        ad.playAt > seekFromTime && // Ad is after the seek start point
-        ad.playAt <= seekToTime && // Ad is before or at the seek end point
-        !this.playedMidRollAds.has(ad.id) // Ad hasn't been played yet
+        cuePoint > Math.floor(seekFromTime) && // Cue is after the seek start point
+        cuePoint <= Math.floor(seekToTime) && // Cue is before or at the seek end point
+        !this.playedCues.has(cuePoint) // Cue hasn't been played yet
       ) {
-        this.playedMidRollAds.add(ad.id);
-        this.trackEvent('ad_start', { adId: ad.id, adType: 'midroll', playAt: ad.playAt, triggeredBySeek: true });
-        return ad;
+        // Mark this cue as played
+        this.playedCues.add(cuePoint);
+        
+        const firstAd = adsAtCue[0];
+        const chainInfo = {
+          isChained: adsAtCue.length > 1,
+          chainLength: adsAtCue.length,
+          chainIndex: 0,
+          cuePoint
+        };
+        
+        this.playedMidRollAds.add(firstAd.id);
+        this.trackEvent('ad_start', { 
+          adId: firstAd.id, 
+          adType: 'midroll', 
+          playAt: firstAd.playAt, 
+          triggeredBySeek: true,
+          chainInfo
+        });
+        
+        if (chainInfo.isChained) {
+          console.log(`🔗 Ad chain started (via seek) at cue ${cuePoint}s with ${chainInfo.chainLength} ads`);
+        }
+        
+        return { ad: firstAd, chainInfo };
       }
     }
     return null;
@@ -147,5 +278,6 @@ export class AdManager {
     this.currentPreRollIndex = 0;
     this.currentPostRollIndex = 0;
     this.playedMidRollAds.clear();
+    this.playedCues.clear(); // PHASE 2: Clear played cues on reset
   }
 }
